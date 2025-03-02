@@ -60,6 +60,9 @@ public:
 
   uint8_t getStatus();
 
+  // Returns send status with respect to the specified protocol
+  uint8_t getStatusProtocol(char* protocol);
+
   void getStatusStr(char* str);
 
   // Called by a Reader to pass an ack frame to the Writer.
