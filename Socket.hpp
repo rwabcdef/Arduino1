@@ -21,13 +21,13 @@ namespace SerLink
 class Socket : public DebugUser
 {
 private:
-  //Writer* writer;
-  //Reader* reader;
+  Writer* writer;
+  Reader* reader;
   bool active;
-  bool txFlag;
+  // bool txFlag;
   //bool txBusy;
-  bool rxFlag;
-  uint8_t txStatus;
+  // bool rxFlag;
+  // uint8_t txStatus;
   readHandler instantReadHandler;
   Frame *rxFrame;
   Frame* txFrame;
@@ -38,17 +38,18 @@ public:
   const static uint8_t TX_STATUS_IDLE = 5;
   const static uint8_t TX_STATUS_BUSY = 6;
 
-  //Socket(Writer* writer, Reader* reader);
-  Socket();
+  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame,
+  readHandler instantReadHandler = nullptr, uint16_t startRollCode = 0);
+
   bool getActive(){ return this->active; };
-  void init(char* protocol, Frame *rxFrame, Frame* txFrame, readHandler instantReadHandler, uint16_t startRollCode = 0);
+  // void init(char* protocol, Frame *rxFrame, Frame* txFrame, readHandler instantReadHandler, uint16_t startRollCode = 0);
 
   //-------------------------------------------
   // Upper (i.e. application) Interface
 
   // Gets received data from the socket (sent by the remote device).
   // Returns true if received data is ready to be read from the socket.
-  bool getRxData(char* data, uint8_t* dataLen);
+  bool getRxData(char* data, uint16_t* dataLen);
 
   // Sends data from the socket to the remote device.
   // Returns true if the data has been accepted.

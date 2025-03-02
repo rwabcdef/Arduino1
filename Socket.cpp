@@ -9,31 +9,40 @@
 #include "swTimer.h"
 #include "string.h"
 
-//SerLink::Socket::Socket(Writer* writer, Reader* reader): writer(writer), reader(reader)
-SerLink::Socket::Socket()
-{
-  this->active = false;
-}
-
-void SerLink::Socket::init(char* protocol, Frame *rxFrame, Frame* txFrame,
-    readHandler instantReadHandler, uint16_t startRollCode)
+SerLink::Socket::Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame
+, readHandler instantReadHandler, uint16_t startRollCode): writer(writer), reader(reader)
 {
   this->active = true;
-  this->txFlag = false;
-  this->rxFlag = false;
+  // this->txFlag = false;
+  // this->rxFlag = false;
   //this->txBusy = false;
-  this->txStatus = TX_STATUS_IDLE;
+  //this->txStatus = TX_STATUS_IDLE;
   this->rxFrame = rxFrame;
   this->txFrame = txFrame;
   strncpy(this->protocol, protocol, Frame::LEN_PROTOCOL);
-  //this->instantReadHandler = instantReadHandler;
+  this->instantReadHandler = instantReadHandler;
   this->txRollCode = startRollCode;
 }
+
+// void SerLink::Socket::init(char* protocol, Frame *rxFrame, Frame* txFrame,
+//     readHandler instantReadHandler, uint16_t startRollCode)
+// {
+//   this->active = true;
+//   this->txFlag = false;
+//   this->rxFlag = false;
+//   //this->txBusy = false;
+//   this->txStatus = TX_STATUS_IDLE;
+//   this->rxFrame = rxFrame;
+//   this->txFrame = txFrame;
+//   strncpy(this->protocol, protocol, Frame::LEN_PROTOCOL);
+//   //this->instantReadHandler = instantReadHandler;
+//   this->txRollCode = startRollCode;
+// }
 
 //------------------------------------------------------------------------------
 // Upper (i.e. application) Interface
 
-bool SerLink::Socket::getRxData(char* data, uint8_t* dataLen)
+bool SerLink::Socket::getRxData(char* data, uint16_t* dataLen)
 {
   if(this->rxFrame == nullptr)
   {
@@ -41,9 +50,8 @@ bool SerLink::Socket::getRxData(char* data, uint8_t* dataLen)
     return false;
   }
 
-  if(this->rxFlag)
+  if(this->reader->getRxFrameProtocol(this->rxFrame, this->protocol))
   {
-    this->rxFlag = false;
     *dataLen = this->rxFrame->dataLen;
     strncpy(data, this->rxFrame->buffer, this->rxFrame->dataLen);
     return true;
@@ -64,16 +72,16 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
     return false;
   }
 
-  if(this->txStatus != TX_STATUS_IDLE)
-  {
-    // Tx is already in progress
-    return false;
-  }
+  // if(this->txStatus != TX_STATUS_IDLE)
+  // {
+  //   // Tx is already in progress
+  //   return false;
+  // }
   else
   {
     // No Tx is currently in progress.
-    this->txFlag = true;
-    this->txStatus = TX_STATUS_BUSY;
+    //this->txFlag = true;
+    //this->txStatus = TX_STATUS_BUSY;
 
     this->txFrame->setProtocol(this->protocol);
     if(ack)
@@ -89,24 +97,31 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
     this->txFrame->dataLen = dataLen;
     strncpy(this->txFrame->buffer, data, dataLen);
 
+    this->writer->sendFrame(this->txFrame);
+
+    //this->txStatus = TX_STATUS_IDLE;
+
     return true;
   }
 }
 
 uint8_t SerLink::Socket::getAndClearSendStatus()
 {
-  if(this->txStatus == TX_STATUS_BUSY)
-  {
-    return this->txStatus;
-  }
-  else
-  {
-    uint8_t status = this->txStatus;
-    this->txStatus = TX_STATUS_IDLE; // clear status
-    return status;
-  }
+  return this->writer->getStatus();
+
+  // if(this->txStatus == TX_STATUS_BUSY)
+  // {
+  //   return this->txStatus;
+  // }
+  // else
+  // {
+  //   uint8_t status = this->txStatus;
+  //   this->txStatus = TX_STATUS_IDLE; // clear status
+  //   return status;
+  // }
 }
 
+/*
 //------------------------------------------------------------------------------
 // Lower (i.e. transport) Interface
 
@@ -161,3 +176,4 @@ void SerLink::Socket::setRxFrame(Frame* rxFrame)
   rxFrame->copy(this->rxFrame);
 }
 //------------------------------------------------------------------------------
+*/
