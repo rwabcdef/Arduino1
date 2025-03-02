@@ -128,7 +128,7 @@ void loop() {
   if(txFrameSent)
   {
     //uint8_t status = writer0.getStatus();
-    uint8_t status = ledSocket.getAndClearSendStatus();
+    uint8_t status = ledSocket.getAndClearSendStatus(); // needs to involve the socket's protocol
     if(status == SerLink::Writer::STATUS_BUSY)
     {
       // do nothing
