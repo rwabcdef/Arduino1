@@ -192,7 +192,6 @@ uint8_t Reader::idle()
 			    // do not use data length and data in ack frame that was set by the instantHandler
 			    this->ackFrame->type = Frame::TYPE_ACK;
 				  this->ackFrame->dataLen = Frame::ACK_OK;
-				  memset(this->ackFrame->buffer, 0, Frame::MAX_DATALEN);
 			  }
 			  else
 			  {

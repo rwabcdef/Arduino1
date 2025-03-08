@@ -69,6 +69,29 @@ uint8_t Writer::getStatus()
   return status;
 }
 
+uint8_t Writer::getStatusProtocol(char* protocol)
+{
+  uint8_t status = this->status;
+  if(Writer::STATUS_BUSY == this->status)
+  {
+    // writer is still busy - do nothing, i.e. don't clear status
+  }
+  else
+  {
+    // writer is not busy
+    if(strncmp(this->txFrame->protocol, protocol, SerLink::Frame::LEN_PROTOCOL) == 0)
+    {
+      // the last frame that was sent has the same protocol as the specified one
+      this->status = Writer::STATUS_IDLE; // clear status
+    }
+    else
+    {
+      // protocol mis-match - so do nothing
+    }    
+  }
+  return status;
+}
+
 void Writer::getStatusStr(char* str)
 {
   switch(this->status)

@@ -8,6 +8,7 @@
 #ifndef FRAME_HPP_
 #define FRAME_HPP_
 
+#include "env.h"
 #include <stdint.h>
 
 namespace SerLink

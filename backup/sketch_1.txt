@@ -17,9 +17,6 @@ Serial monitor Ack frame: TST16A452
 // #include "System0.hpp"
 #include "Socket.hpp"
 
-void toggleBuiltInLed();
-bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
-
 static uint16_t startTick;
 static bool g_ledState = false;
 static char rxFrameFromReader0Buffer[UART_BUFF_LEN];
@@ -60,40 +57,15 @@ SerLink::Frame ledSocketTxFrame(ledSocketTxFrameBuffer);
 
 SerLink::Socket ledSocket(&writer0, &reader0, "LED01", &ledSocketRxFrame, &ledSocketTxFrame);
 
+char ledSocketPayload[2] = {0};
+
 #define LED_SOCKET_RX_DATA_LEN 10
-char ledSocketData[LED_SOCKET_RX_DATA_LEN] = {0};
+char ledSocketRxData[LED_SOCKET_RX_DATA_LEN] = {0};
 uint16_t ledSocketRxDataLen;
-//-----------------------
-// echo socket
-char echoSocketRxFrameBuffer[UART_BUFF_LEN];
-char echoSocketTxFrameBuffer[UART_BUFF_LEN];
-
-SerLink::Frame echoSocketRxFrame(ledSocketRxFrameBuffer);
-SerLink::Frame echoSocketTxFrame(ledSocketTxFrameBuffer);
-
-SerLink::Socket echoSocket(&writer0, &reader0, "ECHO1", &echoSocketRxFrame, &echoSocketTxFrame);
-
-//-----------------------
-// debug socket
-char debugSocketRxFrameBuffer[UART_BUFF_LEN];
-char debugSocketTxFrameBuffer[UART_BUFF_LEN];
-
-SerLink::Frame debugSocketRxFrame(debugSocketRxFrameBuffer);
-SerLink::Frame debugSocketTxFrame(debugSocketTxFrameBuffer);
-
-SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, &debugSockInstantHandler);
-
-//-----------------------
-// general purpose socket data buffers
-
-#define SOCKET_RX_DATA_LEN 12
-char socketRxData[SOCKET_RX_DATA_LEN] = {0};
-char socketTxData[SOCKET_RX_DATA_LEN] = {0};
-uint16_t socketRxDataLen;
 //-----------------------
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
-//static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
+static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
 
 
 void setup() {
@@ -108,7 +80,7 @@ void setup() {
 
   swTimer_tickReset(&startTick);
 
-  //strncpy(ledSocketPayload, "a1", 2);
+  strncpy(ledSocketPayload, "a1", 2);
 }
 
 void loop() {
@@ -118,37 +90,78 @@ void loop() {
   static uint8_t count = 0;
   static uint16_t txFrameCount = 0;
 
-  if(echoSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003ASD
+  void toggleBuiltInLed();
+  
+  cli();
+  if(swTimer_tickCheckTimeout(&startTick, 1000))
   {
-    sprintf(socketTxData, "echo %s\0", socketRxData);
-    echoSocket.sendData(socketTxData, socketRxDataLen + 5, false);
-    memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
+    
+
+    //writer0.sendFrame(txFrame, false);
+    //toggleBuiltInLed();
+
+    count++;
+    if((count % 4) == 0)
+    {
+      send = true;
+    }
+
+    //toggleBuiltInLed();
+  }
+  sei();
+
+  if(send)
+  {
+    send = false;
+    // writer0.sendFrame(&txFrame);
+
+    
+    if(true == ledSocket.sendData(ledSocketPayload, 2, true))   // use socket to send frame LED01A
+    {
+      //toggleBuiltInLed();
+    }
+    txFrameSent = true;
+
+    //toggleBuiltInLed();
   }
 
-  // MUST check socket for rx data in order to clear flags - even if we are going to ignore the data
-  if(debugSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003ASD DBG01T156003aSD
+  if(txFrameSent)
   {
-    // sprintf(socketTxData, "dbg %s\0", socketRxData);
-    // echoSocket.sendData(socketTxData, socketRxDataLen + 4, false);
-    // memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
+    //uint8_t status = writer0.getStatus();
+    uint8_t status = ledSocket.getAndClearSendStatus();
+    if(status == SerLink::Writer::STATUS_BUSY)
+    {
+      // do nothing
+    }
+    else
+    {
+      txFrameSent = false;
+      if(status == SerLink::Writer::STATUS_TIMEOUT)
+      {
+        txFrame.buffer[3] = 'T';
+        strncpy(ledSocketPayload, "TO", 2);
+      } else if(status == SerLink::Writer::STATUS_OK)
+      {
+        strncpy(ledSocketPayload, "OK", 2);
+        txFrame.buffer[3] = 'K';
+      } else{
+        strncpy(ledSocketPayload, "XX", 2);
+        txFrame.buffer[3] = 'X';
+      }
+      txFrameCount++;
+      SerLink::Frame::int3dToStr(txFrameCount, txFrame.buffer);
+    }
   }
+
+  //if(reader0.getRxFrameProtocol(&rxFrameFromReader0, "TST03")) // TST03T287002ab
+  if(ledSocket.getRxData(ledSocketRxData, &ledSocketRxDataLen)) // LED01T805003abc
+  {
+    toggleBuiltInLed();
+  }
+
   writer0.run();
   reader0.run();
-}
-
-bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
-{
-  if(rxFrame.buffer[0] == 'A')
-  {
-    memset(data, 0, 10); // clear outgoing buffer
-    strcpy(data, "ABCD\0");
-    *dataLen = 4;
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  //transport0.run();
 }
 
 void toggleBuiltInLed()

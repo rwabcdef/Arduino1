@@ -21,6 +21,10 @@ SerLink::Socket::Socket(Writer* writer, Reader* reader, char* protocol, Frame *r
   this->txFrame = txFrame;
   strncpy(this->protocol, protocol, Frame::LEN_PROTOCOL);
   this->instantReadHandler = instantReadHandler;
+  if(this->instantReadHandler != nullptr)
+  {
+    this->reader->registerInstantCallback(this->protocol, this->instantReadHandler);
+  }
   this->txRollCode = startRollCode;
 }
 
@@ -107,7 +111,7 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
 
 uint8_t SerLink::Socket::getAndClearSendStatus()
 {
-  return this->writer->getStatus();
+  return this->writer->getStatusProtocol(this->protocol);
 
   // if(this->txStatus == TX_STATUS_BUSY)
   // {
