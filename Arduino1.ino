@@ -11,6 +11,7 @@ Serial monitor Ack frame: TST16A452
 // #include <stdarg.h>
 // #include "uart_wrapper.hpp"
 #include "timer0.h"
+#include "hw_gpio.h"
 #include "swTimer.h"
 #include "Writer.hpp"
 #include "Reader.hpp"
@@ -109,6 +110,12 @@ void setup() {
   swTimer_tickReset(&startTick);
 
   //strncpy(ledSocketPayload, "a1", 2);
+
+  // Pin B5 (Pin 13)
+  gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__OUT);
+  //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
+
+  gpio_setPinLow(GPIO_REG__PORTB, 5);
 }
 
 void loop() {
@@ -117,6 +124,20 @@ void loop() {
   static bool txFrameSent = false;
   static uint8_t count = 0;
   static uint16_t txFrameCount = 0;
+
+  if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T8050011  LED01T8050010
+  {
+    if(socketRxData[0] == '1')
+    {
+      gpio_setPinHigh(GPIO_REG__PORTB, 5);
+    }
+    else if(socketRxData[0] == '0')
+    {
+      gpio_setPinLow(GPIO_REG__PORTB, 5);
+    }
+    else{ /* do nothing */ }
+    memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
+  }
 
   if(echoSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003ASD
   {
