@@ -116,6 +116,10 @@ void setup() {
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
   gpio_setPinLow(GPIO_REG__PORTB, 5);
+
+  //--------------------------
+  // Pin B4 (Pin 12)
+  gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
 }
 
 void loop() {
