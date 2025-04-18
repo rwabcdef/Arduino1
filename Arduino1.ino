@@ -121,13 +121,25 @@ void setup() {
   // Pin B4 (Pin 12)
   gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
 }
+uint8_t count = 0;
 
 void loop() {
 
-  static bool send = false;
-  static bool txFrameSent = false;
-  static uint8_t count = 0;
-  static uint16_t txFrameCount = 0;
+  bool send = false;
+  bool txFrameSent = false;
+  
+  uint16_t txFrameCount = 0;
+  char txData[3];
+
+  cli();
+  if(swTimer_tickCheckTimeout(&startTick, 3000))
+  {
+    sprintf(txData, "%03d", count++);
+    ledSocket.sendData(txData, 3, false);
+
+    //toggleBuiltInLed();
+  }
+  sei();
 
   if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T8050011  LED01T8050010
   {
