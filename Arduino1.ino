@@ -8,7 +8,7 @@ Serial monitor Ack frame: TST16A452
 // #include "wiring_private.h"
 
 // #include <stdio.h>
-// #include <stdarg.h>
+#include <stdarg.h>
 // #include "uart_wrapper.hpp"
 #include "timer0.h"
 #include "hw_gpio.h"
@@ -96,6 +96,8 @@ uint16_t socketRxDataLen;
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
 
+uint8_t count = 0;
+static char txData[4];
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -120,26 +122,59 @@ void setup() {
   //--------------------------
   // Pin B4 (Pin 12)
   gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
+
+  sprintf(txData, "AAA", nullptr);
 }
-uint8_t count = 0;
+
 
 void loop() {
 
-  bool send = false;
-  bool txFrameSent = false;
+  static bool send = false;
+  static bool frameSent = false;
   
   uint16_t txFrameCount = 0;
-  char txData[3];
+  
 
   cli();
   if(swTimer_tickCheckTimeout(&startTick, 3000))
   {
-    sprintf(txData, "%03d", count++);
-    ledSocket.sendData(txData, 3, false);
+    //sprintf(txData, "%03d", count++);
+    ledSocket.sendData(txData, 3, true);
+
+    frameSent = true;
 
     //toggleBuiltInLed();
   }
   sei();
+
+  if(frameSent)
+  {
+    uint8_t status = ledSocket.getAndClearSendStatus();
+    if(status == SerLink::Writer::STATUS_BUSY)
+    {
+      // do nothing
+    }
+    else
+    {
+      frameSent = false;
+      sprintf(txData, "%02d", count++);
+      if(count > 99){ count = 0; }
+      
+      if(status == SerLink::Writer::STATUS_TIMEOUT)
+      {
+        txData[2] = 'T';
+        //strncpy(ledSocketPayload, "TO", 2);
+      } else if(status == SerLink::Writer::STATUS_OK)
+      {
+        //strncpy(ledSocketPayload, "OK", 2); // LED01A006
+        txData[2] = 'K';
+      } else{
+        //strncpy(ledSocketPayload, "XX", 2);
+        txData[2] = 'X';
+      }
+      
+    }
+  }
 
   if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T8050011  LED01T8050010
   {
