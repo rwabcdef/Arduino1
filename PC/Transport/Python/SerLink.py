@@ -1,6 +1,7 @@
 import serial
-import traceback, time, threading, datetime 
+import traceback, time, threading, datetime , queue
 
+# python SerLink.py
 #---------------------------------------------------
 class SerLink:
   def __init__(self, port, baudrate):
@@ -104,10 +105,48 @@ class SerLink:
         return line.decode("utf-8")
     
     def write(self, data):
+      if(data[-1] != '\n'):
+        data = data + '\n'
       self.port.write(data.encode('utf-8'))
     
     def close(self):
       self.port.close()
+
+  class Writer:
+
+    MSG_TYPE_TX_FRAME = 1
+    MSG_TYPE_ACK_FRAME = 2
+    MSG_TYPE_QUIT = 3
+
+    class Message:
+      def __init__(self, msgType, data=None):
+        self.msgType = msgType
+        self.data = data
+        self.ackWait = False
+
+    def __init__(self, port, debug=None):
+      self.port = port
+      self.queue = queue.Queue(maxsize=10)
+
+    def sendFrame(self, frame):
+      msg = SerLink.Writer.Message(SerLink.Writer.MSG_TYPE_TX_FRAME, data=frame)
+      self.queue.put(msg)
+
+    def run(self):
+      if(self.debug != None):
+        self.debug.threadNameResolver.addCurrentThread('WTR  ')
+
+      while(True):
+        msg = self.queue.get()
+        if(msg.msgType == SerLink.Writer.MSG_TYPE_QUIT):
+          # quit thread
+          break
+
+        elif(msg.msgType == SerLink.Writer.MSG_TYPE_TX_FRAME):
+          pass
+          # **** unfinnished
+
+          # self.queue.task_done()
     
   class Reader:
     def __init__(self, port, debug=None):
