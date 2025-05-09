@@ -7,8 +7,8 @@ class SerLink:
   def __init__(self, port, baudrate):
     self.debug = SerLink.Debug()
     self.port = SerLink.Port(port, baudrate)
-    self.writer = SerLink.Writer(self.port, self.debug)
-    self.reader = SerLink.Reader(self.port, self.writer, self.debug)
+    self.writer = SerLink.Writer(self.port, debug=self.debug, ackWaitTime=1)
+    self.reader = SerLink.Reader(self.port, writer=self.writer, debug=self.debug)
 
   def start(self):
     self.port.init()
@@ -18,14 +18,18 @@ class SerLink:
     self.readerThread.start()
 
   def close(self):
-    self.writerThread.quit()
+    self.writer.quit()
     self.writerThread.join()
     self.reader.quit()
     self.readerThread.join()
     self.port.close()
 
   def readline(self):
-    return self.port.readline().decode("utf-8")
+    return self.reader.readline()
+  
+  def sendFrameWait(self, frame):
+    ret = self.writer.sendFrameWait(frame)
+    return ret
   
   class Frame:
     TYPE_TRANSMISSION = 'T'
@@ -73,7 +77,13 @@ class SerLink:
       self.data = str[start:end]
 
     def toString(self):
-      s = '%s%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, self.dataLen, self.data)
+      if(self.type == SerLink.Frame.TYPE_ACK):
+        s = '%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, self.dataLen)
+      else:
+        if(self.data == None):
+          s = '%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN))
+        else:
+          s = '%s%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN), self.data)
       return s
 
     def print(self):
@@ -113,6 +123,7 @@ class SerLink:
     def writeLine(self, data):
       if(data[-1] != '\n'):
         data = data + '\n'
+      print('port.writeLine: %s' % data)
       self.port.write(data.encode('utf-8'))
     
     def close(self):
@@ -142,6 +153,7 @@ class SerLink:
 
     def __init__(self, port, debug=None, ackWaitTime=0.5):
       self.port = port
+      self.debug = debug
       self.ackWaitTime = ackWaitTime
       self.inputQueue = queue.Queue(maxsize=10)
       self.ackWait = False
@@ -165,6 +177,8 @@ class SerLink:
       self.inputQueue.put(msg)
 
     def sendFrameWait(self, frame):
+      self.print('Writer.sendFrameWait start: %s' % frame.toString()[:-1])
+
       msg = SerLink.Writer.InputMessage(SerLink.Writer.MSG_TYPE_TX_FRAME, data=frame)
 
       self.outputMutex.acquire()
@@ -184,6 +198,8 @@ class SerLink:
         else:
           break
 
+      self.print('Writer.sendFrameWait end: %s' % str(self.outputMessage.txStatus))
+
       return self.outputMessage
 
     def run(self):
@@ -197,6 +213,8 @@ class SerLink:
         except queue.Empty as qe:
           # queue is empty - no message has been read from it with the ack wait time
           pass
+
+        #self.print('Writer inputQueue timeout')
 
         if(msg == None):
           # no new new frame to be sent or ack frame has been received
@@ -229,6 +247,8 @@ class SerLink:
               ackFrame = msg.data
               self.ackWait = False
 
+              self.print('Writer Rx Ack Frame: %s' % ackFrame.toString()[:-1])
+
               self.outputMutex.acquire()
               
               if(ackFrame.protocol == self.txFrame.protocol):
@@ -236,7 +256,7 @@ class SerLink:
 
                 
 
-                if(ackFrame.dataLen < SerLink.Frame.ACK_OK):
+                if(int(ackFrame.dataLen) < SerLink.Frame.ACK_OK):
                   self.outputMessage.txStatus = SerLink.Writer.STATUS_OK_DATA
                   self.outputMessage.ackData = ackFrame.data
                 else:
@@ -258,9 +278,15 @@ class SerLink:
             
             if(msg.msgType == SerLink.Writer.MSG_TYPE_TX_FRAME):
               # send frame
+
               self.txFrame = msg.data
+
+              self.print('Writer Tx Frame start: %s' % self.txFrame.toString()) # [:-1]
+              
               frameStr = self.txFrame.toString()
               self.port.writeLine(frameStr)
+
+              self.print('Writer Tx Frame end')
 
               if(self.txFrame.type == SerLink.Frame.TYPE_TRANSMISSION):
                 # We DO expect an ack back
@@ -318,13 +344,15 @@ class SerLink:
 
             # ack send
             ackFrameStr = ackFrame.toString()
-            self.port.write(ackFrameStr)
+            self.port.writeLine(ackFrameStr)
 
-        elif(len(line) >= SerLink.Frame.LEN_ACK):
-
-          if(self.rxFrame.type == SerLink.Frame.TYPE_ACK):
+          elif(self.rxFrame.type == SerLink.Frame.TYPE_ACK):
             # An ack frame has been received - so pass it to the writer
             self.writer.setAckFrame(self.rxFrame)
+
+        #elif(len(line) >= SerLink.Frame.LEN_ACK):
+
+          
 
     def quit(self):
       self.quitFlag = True
@@ -379,6 +407,15 @@ class SerLink:
       def print(self, s):
         print('[%s:%s] %s' % (self.threadNameResolver.getCurrentThreadName(), self.timeStamper.getElapsed(), s))
 
+  class Utils:
+    def padIntLeft(n, maxLen, padChar = '0'):
+      s = str(n)
+      if(len(s) >= maxLen):
+        return s
+      for i in range(0, maxLen - len(s)):
+        s = padChar + s
+      return s
+
 #---------------------------------------------------
 # Run:
 # python SerLink.py
@@ -397,6 +434,11 @@ if __name__ == '__main__':
       break
     # line = ser.readline()
     # print('rx> ' + line)
+
+    if inStr == 't':
+      txFrame = SerLink.Frame("LED28", SerLink.Frame.TYPE_TRANSMISSION, 345, 4, "abcd")
+      ret = ser.sendFrameWait(txFrame)
+      print(ret.txStatus)
 
   ser.close()
 
