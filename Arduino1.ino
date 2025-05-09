@@ -176,6 +176,8 @@ void loop() {
     }
   }
 
+  // special case (does not send ack back): NOACKT234003asd
+
   if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T8050011  LED01T8050010
   {
     if(socketRxData[0] == '1')

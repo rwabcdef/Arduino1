@@ -170,6 +170,16 @@ uint8_t Reader::idle()
 
 		if(this->rxFrame->type == Frame::TYPE_TRANSMISSION)
 		{
+
+      // Check for: No ack special case (protocol = NOACK)
+      if(0 == strncmp(this->rxFrame->protocol, "NOACK", Frame::LEN_PROTOCOL))
+      {
+        // The received packet is the special case (do not send an ack) - so do nothing
+        swTimer_tickReset(&this->startTick);
+        sei();
+        return RXDELAY;
+      }
+
 			this->rxFrame->copy(this->ackFrame);
 			this->ackFrame->type = Frame::TYPE_ACK;
 			this->ackFrame->dataLen = Frame::ACK_OK;
