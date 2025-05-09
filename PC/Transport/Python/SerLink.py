@@ -12,10 +12,14 @@ class SerLink:
 
   def start(self):
     self.port.init()
+    self.writerThread = threading.Thread(target=self.writer.run)
+    self.writerThread.start()
     self.readerThread = threading.Thread(target=self.reader.run)
     self.readerThread.start()
 
   def close(self):
+    self.writerThread.quit()
+    self.writerThread.join()
     self.reader.quit()
     self.readerThread.join()
     self.port.close()
