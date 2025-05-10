@@ -226,6 +226,7 @@ class SerLink:
             self.outputMessage.txStatus = SerLink.Writer.STATUS_TIMEOUT
             self.outputMessage.ackData = None
             self.outputMutex.release()
+            self.ackWait = False
           else:
             # We are NOT currently waiting for an ack frame
             continue
@@ -423,6 +424,7 @@ if __name__ == '__main__':
   print('start 1')
 
   ser = SerLink('COM3', 19200)
+  ser.debug.threadNameResolver.addCurrentThread('MAIN ')
   ret = ser.start()
 
   print("Enter a command:")
@@ -436,7 +438,14 @@ if __name__ == '__main__':
     # print('rx> ' + line)
 
     if inStr == 't':
-      txFrame = SerLink.Frame("LED28", SerLink.Frame.TYPE_TRANSMISSION, 345, 4, "abcd")
+      # LED01T345004abcd
+      txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 345, 4, "abcd") 
+      ret = ser.sendFrameWait(txFrame)
+      print(ret.txStatus)
+
+    elif inStr == 'tn':
+      # NOACKT956003byh
+      txFrame = SerLink.Frame("NOACK", SerLink.Frame.TYPE_TRANSMISSION, 956, 3, "byh") 
       ret = ser.sendFrameWait(txFrame)
       print(ret.txStatus)
 

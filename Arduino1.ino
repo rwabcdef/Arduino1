@@ -124,7 +124,7 @@ void setup() {
   gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
 
   sprintf(txData, "AAA", nullptr);
-}
+} // end setup()
 
 
 void loop() {
@@ -139,9 +139,8 @@ void loop() {
   if(swTimer_tickCheckTimeout(&startTick, 3000))
   {
     //sprintf(txData, "%03d", count++);
-    ledSocket.sendData(txData, 3, true);
-
-    frameSent = true;
+    //ledSocket.sendData(txData, 3, true);
+    //frameSent = true;
 
     //toggleBuiltInLed();
   }
@@ -208,7 +207,8 @@ void loop() {
   }
   writer0.run();
   reader0.run();
-}
+
+} // end loop()
 
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
 {
