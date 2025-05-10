@@ -81,9 +81,11 @@ class SerLink:
         s = '%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, self.dataLen)
       else:
         if(self.data == None):
-          s = '%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN))
+          s = '%s%s%s%s\n' % (self.protocol, self.type, SerLink.Utils.padIntLeft(self.rollCode, SerLink.Frame.LEN_ROLLCODE),
+                              SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN))
         else:
-          s = '%s%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN), self.data)
+          s = '%s%s%s%s%s\n' % (self.protocol, self.type, SerLink.Utils.padIntLeft(self.rollCode, SerLink.Frame.LEN_ROLLCODE),
+                                SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN), self.data)
       return s
 
     def print(self):
@@ -418,6 +420,8 @@ class SerLink:
       return s
 
 #---------------------------------------------------
+# ECHO1T076004abcd LED01T805003abc DBG01T156003ASD DBG01T156003aSD
+
 # Run:
 # python SerLink.py
 if __name__ == '__main__':
@@ -441,13 +445,26 @@ if __name__ == '__main__':
       # LED01T345004abcd
       txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 345, 4, "abcd") 
       ret = ser.sendFrameWait(txFrame)
-      print(ret.txStatus)
+      print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     elif inStr == 'tn':
       # NOACKT956003byh
       txFrame = SerLink.Frame("NOACK", SerLink.Frame.TYPE_TRANSMISSION, 956, 3, "byh") 
       ret = ser.sendFrameWait(txFrame)
-      print(ret.txStatus)
+      print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
+
+    # ECHO1T076004abcd
+    elif inStr == 'te':
+      # NOACKT956003byh
+      txFrame = SerLink.Frame("ECHO1", SerLink.Frame.TYPE_TRANSMISSION, 97, 4, "abcd") 
+      ret = ser.sendFrameWait(txFrame)
+      print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
+
+    #DBG01T156003ASD
+    elif inStr == 'td1':
+      txFrame = SerLink.Frame("DBG01", SerLink.Frame.TYPE_TRANSMISSION, 45, 3, "ASD") 
+      ret = ser.sendFrameWait(txFrame)
+      print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
   ser.close()
 
