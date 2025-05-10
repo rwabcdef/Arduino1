@@ -205,6 +205,7 @@ void loop() {
     // echoSocket.sendData(socketTxData, socketRxDataLen + 4, false);
     // memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
   }
+  reader0.clearRxFlag();
   writer0.run();
   reader0.run();
 

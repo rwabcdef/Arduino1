@@ -152,6 +152,11 @@ bool Reader::getRxFrameProtocol(Frame* rxFrame, char* protocol)
     return false;
   }
 }
+
+void Reader::clearRxFlag()
+{
+  this->rxFlag = false;
+}
 //-----------------------------------------------------------------
 // Start of state methods
 
@@ -177,7 +182,7 @@ uint8_t Reader::idle()
         // The received packet is the special case (do not send an ack) - so do nothing
         swTimer_tickReset(&this->startTick);
         sei();
-        return RXDELAY;
+        return IDLE;
       }
 
 			this->rxFrame->copy(this->ackFrame);

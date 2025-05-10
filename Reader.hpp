@@ -96,6 +96,7 @@ public:
 	bool registerInstantCallback(char* protocol, readHandler handler);
 	bool getRxFrame(Frame* rxFrame);
   bool getRxFrameProtocol(Frame* rxFrame, char* protocol);
+  void clearRxFlag();
 
 	uint8_t getCurrentState();
 	char* getCurrentStateName();
