@@ -27,6 +27,10 @@ static char rxFrameFromReader0Buffer[UART_BUFF_LEN];
 static SerLink::Frame rxFrameFromReader0(rxFrameFromReader0Buffer);  // received frame from reader0
 static char txFrameBuffer[UART_BUFF_LEN];
 
+static uint16_t buttonStartTick;
+static bool buttonListen = true;
+static uint8_t buttonCount = 0;
+
 //-------------------------------------------------
 // reader0 & writer0
 
@@ -69,8 +73,8 @@ uint16_t ledSocketRxDataLen;
 char echoSocketRxFrameBuffer[UART_BUFF_LEN];
 char echoSocketTxFrameBuffer[UART_BUFF_LEN];
 
-SerLink::Frame echoSocketRxFrame(ledSocketRxFrameBuffer);
-SerLink::Frame echoSocketTxFrame(ledSocketTxFrameBuffer);
+SerLink::Frame echoSocketRxFrame(echoSocketRxFrameBuffer);
+SerLink::Frame echoSocketTxFrame(echoSocketTxFrameBuffer);
 
 SerLink::Socket echoSocket(&writer0, &reader0, "ECHO1", &echoSocketRxFrame, &echoSocketTxFrame);
 
@@ -83,6 +87,17 @@ SerLink::Frame debugSocketRxFrame(debugSocketRxFrameBuffer);
 SerLink::Frame debugSocketTxFrame(debugSocketTxFrameBuffer);
 
 SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, &debugSockInstantHandler);
+//-----------------------
+// button socket
+char buttonSocketRxFrameBuffer[UART_BUFF_LEN];
+char buttonSocketTxFrameBuffer[UART_BUFF_LEN];
+
+SerLink::Frame buttonSocketRxFrame(buttonSocketRxFrameBuffer);
+SerLink::Frame buttonSocketTxFrame(buttonSocketTxFrameBuffer);
+
+SerLink::Socket buttonSocket(&writer0, &reader0, "BUTO1", &buttonSocketRxFrame, &buttonSocketTxFrame);
+
+//-----------------------
 
 //-----------------------
 // general purpose socket data buffers
@@ -110,6 +125,7 @@ void setup() {
   timer0_init();
 
   swTimer_tickReset(&startTick);
+  swTimer_tickReset(&buttonStartTick);
 
   //strncpy(ledSocketPayload, "a1", 2);
 
@@ -134,6 +150,41 @@ void loop() {
   
   uint16_t txFrameCount = 0;
   
+  
+
+
+  cli();
+  if(swTimer_tickCheckTimeout(&buttonStartTick, 20))
+  {
+    if(buttonListen)
+    {
+      bool pin = gpio_getPinState(GPIO_REG__PORTB, 4);
+      if(pin)
+      {
+        //gpio_setPinHigh(GPIO_REG__PORTB, 5);
+      }
+      else
+      {
+        // first edge
+        //gpio_setPinLow(GPIO_REG__PORTB, 5);
+        buttonListen = false;
+        buttonCount = 0;
+
+        sprintf(socketTxData, "%s\0", "PR");
+        buttonSocket.sendData(socketTxData, 2, true);
+      }
+    }
+    else
+    {
+      buttonCount++;
+      if(buttonCount >= 10)
+      {
+        buttonListen = true;
+      }
+    }
+    
+  }
+  sei();
 
   cli();
   if(swTimer_tickCheckTimeout(&startTick, 3000))
