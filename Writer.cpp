@@ -48,6 +48,11 @@ void Writer::run()
 // Used to send frame (called from app layer above)
 uint8_t Writer::sendFrame(Frame* frame)
 {
+  if(this->status == Writer::STATUS_BUSY)
+  {
+    return 1;
+  }
+  
   this->txFlag = true;
   frame->copy(this->txFrame);
   this->status = Writer::STATUS_BUSY;

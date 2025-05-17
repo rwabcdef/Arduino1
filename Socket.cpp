@@ -73,40 +73,35 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
 
   if(!this->active)
   {
+    // This socket is not acive - so do nothing
     return false;
   }
 
-  // if(this->txStatus != TX_STATUS_IDLE)
-  // {
-  //   // Tx is already in progress
-  //   return false;
-  // }
+  if(this->writer->getStatus() == Writer::STATUS_BUSY)
+  {
+    // Writer is currently busy - so do nothing
+    return false;
+  }
+
+  this->txFrame->setProtocol(this->protocol);
+  if(ack)
+  {
+    this->txFrame->type = Frame::TYPE_TRANSMISSION;
+  }
   else
   {
-    // No Tx is currently in progress.
-    //this->txFlag = true;
-    //this->txStatus = TX_STATUS_BUSY;
-
-    this->txFrame->setProtocol(this->protocol);
-    if(ack)
-    {
-      this->txFrame->type = Frame::TYPE_TRANSMISSION;
-    }
-    else
-    {
-      this->txFrame->type = Frame::TYPE_UNIDIRECTION;
-    }
-    this->txFrame->rollCode = this->txRollCode;
-    Frame::incRollCode(&this->txRollCode);
-    this->txFrame->dataLen = dataLen;
-    strncpy(this->txFrame->buffer, data, dataLen);
-
-    this->writer->sendFrame(this->txFrame);
-
-    //this->txStatus = TX_STATUS_IDLE;
-
-    return true;
+    this->txFrame->type = Frame::TYPE_UNIDIRECTION;
   }
+  this->txFrame->rollCode = this->txRollCode;
+  Frame::incRollCode(&this->txRollCode);
+  this->txFrame->dataLen = dataLen;
+  strncpy(this->txFrame->buffer, data, dataLen);
+
+  this->writer->sendFrame(this->txFrame);
+
+  //this->txStatus = TX_STATUS_IDLE;
+
+  return true;
 }
 
 uint8_t SerLink::Socket::getAndClearSendStatus()
