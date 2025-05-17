@@ -466,6 +466,16 @@ if __name__ == '__main__':
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
+    elif inStr == 'tledon':
+      txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 45, 1, "1") 
+      ret = ser.sendFrameWait(txFrame)
+      print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
+
+    elif inStr == 'tledoff':
+      txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 45, 1, "0") 
+      ret = ser.sendFrameWait(txFrame)
+      print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
+
   ser.close()
 
   # ser = serial.Serial('COM3', 19200, timeout=None)
