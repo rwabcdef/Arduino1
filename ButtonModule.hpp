@@ -10,22 +10,34 @@
 #define BUTTONMODULE_THRESHOLD 4
 #define BUTTONMODULE_PERIOD_mS 50
 
-namespace ArdMod::Std
+namespace EventModule::Std
 {
 
-class ButtonModule
+class ButtonModule : public StateMachine
 {
   private:    
     uint8_t port;
     uint8_t pin;
-    uint8_t count;
-    uint16_t duration;
+    bool pressedPinState;
+    bool eventPinState;
+    bool currentPinState;
+    bool previousPinState;
+    bool outEventFlag;
+    bool stable;
+    uint8_t activeCount;
+    uint8_t inActiveCount;
+    //uint16_t duration;
+    uint16_t startTick;
+
+    // state methods
+    uint8_t released();
+    uint8_t pressed();
 
   public:
-    ButtonModule(uint8_t port, uint8_t pin);
+    ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState);
 
     //---------------------------------------------------
-    // Basic interface
+    // Basic (flag) interface
 
     // Returns true if button pressed otherwise returns false.
     bool getPress();
