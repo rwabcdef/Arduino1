@@ -35,6 +35,8 @@ class ButtonModule : public StateMachine
 
   public:
     ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState);
+    
+    void run();
 
     //---------------------------------------------------
     // Basic (flag) interface

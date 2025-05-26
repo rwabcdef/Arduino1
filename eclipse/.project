@@ -24,4 +24,10 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<variableList>
+		<variable>
+			<name>ARDUINO_IDE_PROJECT</name>
+			<value>file:/C:/Users/rw123/OneDrive/Documents/Rob/software/Embedded/Arduino/repo/Arduino1/Arduino1</value>
+		</variable>
+	</variableList>
 </projectDescription>
