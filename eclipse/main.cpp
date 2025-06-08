@@ -7,6 +7,9 @@
 
 #include "env_config.h"
 #include <stdio.h>
+#include "DebugPrint.hpp"
+
+DebugPrint debugPrint;
 
 int main()
 {

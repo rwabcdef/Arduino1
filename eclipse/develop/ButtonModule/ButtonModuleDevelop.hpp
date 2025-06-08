@@ -8,7 +8,7 @@
 #ifndef BUTTONMODULEDEVELOP_HPP_
 #define BUTTONMODULEDEVELOP_HPP_
 
-namespace EventModule::Std{
+namespace HardwareModule::Std{
 
 class ButtonModuleDevelop{
 
