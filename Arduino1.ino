@@ -17,6 +17,7 @@ Serial monitor Ack frame: TST16A452
 #include "Reader.hpp"
 // #include "System0.hpp"
 #include "Socket.hpp"
+#include "ButtonModule.hpp"
 
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
@@ -95,7 +96,7 @@ char buttonSocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame buttonSocketRxFrame(buttonSocketRxFrameBuffer);
 SerLink::Frame buttonSocketTxFrame(buttonSocketTxFrameBuffer);
 
-SerLink::Socket buttonSocket(&writer0, &reader0, "BUTO1", &buttonSocketRxFrame, &buttonSocketTxFrame);
+SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame);
 
 //-----------------------
 
@@ -107,6 +108,8 @@ char socketRxData[SOCKET_RX_DATA_LEN] = {0};
 char socketTxData[SOCKET_RX_DATA_LEN] = {0};
 uint16_t socketRxDataLen;
 //-----------------------
+// Button: Pin B4 (Pin 12)
+HardwareModule::Std::ButtonModule button0(GPIO_REG__PORTB, 4, false);
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
@@ -137,7 +140,7 @@ void setup() {
 
   //--------------------------
   // Pin B4 (Pin 12)
-  gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
+  //gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
 
   sprintf(txData, "AAA", nullptr);
 } // end setup()
@@ -147,12 +150,26 @@ void loop() {
 
   static bool send = false;
   static bool frameSent = false;
+  static uint8_t pressDuration;
   
   uint16_t txFrameCount = 0;
   
-  
+  cli();
+  button0.run();
+  HardwareModule::Std::ButtonModule::eventTypes event = button0.getEvent(&pressDuration);
+  if(event == HardwareModule::Std::ButtonModule::eventTypes::Pressed)
+  {
+    sprintf(socketTxData, "%s\0", "PR");
+    buttonSocket.sendData(socketTxData, 2, true);
+  }
+  else if(event == HardwareModule::Std::ButtonModule::eventTypes::Released)
+  {
+    sprintf(socketTxData, "%s\0", "RL");
+    buttonSocket.sendData(socketTxData, 2, true);
+  }
+  sei();
 
-
+  /*
   cli();
   if(swTimer_tickCheckTimeout(&buttonStartTick, 20))
   {
@@ -185,6 +202,7 @@ void loop() {
     
   }
   sei();
+  */
 
   cli();
   if(swTimer_tickCheckTimeout(&startTick, 3000))

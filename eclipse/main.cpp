@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include "DebugPrint.hpp"
 
-DebugPrint debugPrint;
+DebugPrint* debugPrint;
 
 int main()
 {

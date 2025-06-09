@@ -37,7 +37,7 @@ class ButtonModule : public StateMachine
     // otherwise returns 0.
     uint16_t getRelease();
 
-    eventTypes getEvent(uint16_t* pressDuration);
+    eventTypes getEvent(uint8_t* pressDuration);
   //---------------------------------------------------
 
   private:    
@@ -51,6 +51,7 @@ class ButtonModule : public StateMachine
     bool stable;
     uint8_t activeCount;
     uint8_t inActiveCount;
+    uint8_t pressedCount;
     //uint16_t duration;
     uint16_t startTick;
     eventTypes eventType;
@@ -60,10 +61,10 @@ class ButtonModule : public StateMachine
     uint8_t pressed();    
 
     enum internalEventTypes{
-      None = 0,
+      NoEvent = 0,
       Edge = 1,
       StableActive,
-      StableInacive
+      StableInactive
     };
 
     internalEventTypes eventCheck();

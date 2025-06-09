@@ -9,8 +9,8 @@
 #define GLOBAL_HPP_
 
 #include "DebugPrint.hpp"
-//#include "SimClk.hpp"
-//#include "InterruptRunner.hpp"
+#include "SimClk.hpp"
+#include "InterruptRunner.hpp"
 
 extern DebugPrint *debugPrint;
 //extern SimClk *simClk;
