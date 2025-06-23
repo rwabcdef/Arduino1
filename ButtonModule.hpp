@@ -19,6 +19,7 @@ class ButtonModule : public StateMachine
     enum eventTypes{
       None = 0,
       Pressed,
+      LongPressed,
       Released,
       Stuck
     };
