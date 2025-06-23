@@ -10,18 +10,20 @@
  
 #include <stdint.h>
  
- 
-namespace ArdMod
+namespace HardMod
 {
  
 class Event{
 
-  private:
+  protected:
     char action;
  
   public:
  
     Event();
+
+    // Sets the Event's action
+    void setAction(char action);
  
     // Convert this event to a string. Returns the string length.
     virtual uint8_t serialise(char* str);
@@ -31,6 +33,16 @@ class Event{
  
     // Copies the variables of this event into the other event (copyEvent).
     virtual void copy(Event* copyEvent);
+ };
+
+ //------------------------------------------------------------
+ class HasUnitId{
+
+  protected:
+    char unitId;
+  public:
+    HasUnitId(char unitId);
+    void setUnitId(char unitId);
  };
 
 } // end namespace ArdMod

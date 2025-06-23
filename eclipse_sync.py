@@ -1,4 +1,7 @@
 # Copies source files from Arduino IDE sketch dir to eclipse source dir.
+#
+# run:
+# python .\eclipse_sync.py
 
 import os, shutil
 

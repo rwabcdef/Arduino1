@@ -80,8 +80,9 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PC/TSQueue"/>
 						<entry excluding="testComponents" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PC/testSys"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PC/testSys/testComponents"/>
-						<entry excluding="ButtonModule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="develop"/>
+						<entry excluding="HardMod/Event|ButtonModule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="develop"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="develop/ButtonModule"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="develop/HardMod/Event"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
