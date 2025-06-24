@@ -10,7 +10,7 @@
 #define BUTTONMODULE_THRESHOLD 4
 #define BUTTONMODULE_PERIOD_mS 50
 
-namespace HardwareModule::Std
+namespace HardMod::Std
 {
 
 class ButtonModule : public StateMachine
@@ -19,6 +19,7 @@ class ButtonModule : public StateMachine
     enum eventTypes{
       None = 0,
       Pressed,
+      LongPressed,
       Released,
       Stuck
     };

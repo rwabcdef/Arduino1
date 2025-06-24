@@ -2,7 +2,7 @@
 #include "swTimer.h"
 #include "hw_gpio.h"
 
-namespace HardwareModule::Std
+namespace HardMod::Std
 {
 
 #define RELEASED 1

@@ -1,7 +1,13 @@
-#ifndef BUTTONMEVENT_HPP_
-#define BUTTONMEVENT_HPP_
+#ifndef BUTTONEVENT_HPP_
+#define BUTTONEVENT_HPP_
 
 #include "HardMod_Event.hpp"
+#include "ButtonModule.hpp"
+
+#define BUTTONEVENT__PRESSED 'P'
+#define BUTTONEVENT__LONGPRESS 'L'
+#define BUTTONEVENT__RELEASED 'R'
+#define BUTTONEVENT__STUCK 'S'
 
 namespace HardMod
 {

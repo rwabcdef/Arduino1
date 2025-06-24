@@ -11,7 +11,7 @@
 #include "env.hpp"
 #include "Global.hpp"
 #include "Event.hpp"
-#include "cute.h"
+//#include "cute.h"
 #include "uart_wrapper.hpp"
 #include "Frame.hpp"
 #include "Reader_config.hpp"

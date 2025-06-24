@@ -39,10 +39,10 @@ const char* unknownThreadIdLabel = "UN  ";
 
 //----------------------------------
 // Global varaibles (Global.hpp)
-volatile uint32_t g_simClk_uS = 0;
-DebugPrint *debugPrint;
-InterruptRunner *interruptRunner; // = new InterruptRunner(debugPrint);
-SimClk *simClk;
+//volatile uint32_t g_simClk_uS = 0;
+//DebugPrint *debugPrint;
+//InterruptRunner *interruptRunner; // = new InterruptRunner(debugPrint);
+//SimClk *simClk;
 //----------------------------------
 // DebugPrint *debugPrint = new DebugPrint(&MakeTimestamp);
 //InterruptRunner interruptRunner(debugPrint);

@@ -6,7 +6,7 @@
  */
 
 #include "testComponents.hpp"
-
+#include "Global.hpp"
 
 char tc_debugStr[ENV_DEBUG_STR_LEN] = {0};
 //-------------------------------------------------

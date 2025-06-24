@@ -8,13 +8,13 @@
 #ifndef BUTTONMODULEDEVELOP_HPP_
 #define BUTTONMODULEDEVELOP_HPP_
 
-namespace HardwareModule::Std{
+namespace HardMod::Std{
 
 class ButtonModuleDevelop{
 
   public:
-    void run1();
-
+    static void run1();
+    static void buttonEvent1();
 };
 
 }

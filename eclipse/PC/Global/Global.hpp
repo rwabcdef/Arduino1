@@ -13,8 +13,8 @@
 #include "InterruptRunner.hpp"
 
 extern DebugPrint *debugPrint;
-//extern SimClk *simClk;
-//extern InterruptRunner *interruptRunner;
-//extern volatile uint32_t g_simClk_uS;
+extern SimClk *simClk;
+extern InterruptRunner *interruptRunner;
+extern volatile uint32_t g_simClk_uS;
 
 #endif /* GLOBAL_HPP_ */
