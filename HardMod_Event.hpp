@@ -5,10 +5,12 @@
  *      Author: rob
  */
 
-#ifndef ARDMOD_EVENT_HPP_
-#define ARDMOD_EVENT_HPP_
+#ifndef HARDMOD_EVENT_HPP_
+#define HARDMOD_EVENT_HPP_
  
 #include <stdint.h>
+
+#define EVENT__NONE '-' // code for: no event
  
 namespace HardMod
 {
@@ -17,6 +19,7 @@ class Event{
 
   protected:
     char action;
+    void clr();
  
   public:
  
@@ -24,6 +27,10 @@ class Event{
 
     // Sets the Event's action
     void setAction(char action);
+
+    char getAction();
+
+    virtual char getActionClear();
  
     // Convert this event to a string. Returns the string length.
     virtual uint8_t serialise(char* str);
@@ -33,6 +40,9 @@ class Event{
  
     // Copies the variables of this event into the other event (copyEvent).
     virtual void copy(Event* copyEvent);
+
+    // Clear this event
+    virtual void clear();
  };
 
  //------------------------------------------------------------

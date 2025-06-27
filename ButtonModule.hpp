@@ -6,11 +6,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "StateMachine.hpp"
+#include "ButtonEvent.hpp"
 
 #define BUTTONMODULE_THRESHOLD 4
 #define BUTTONMODULE_PERIOD_mS 50
 
-namespace HardwareModule::Std
+namespace HardMod::Std
 {
 
 class ButtonModule : public StateMachine
@@ -24,7 +25,8 @@ class ButtonModule : public StateMachine
       Stuck
     };
 
-    ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState);
+    ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState,
+      ButtonEvent *buttonEvent = nullptr, uint8_t longPressThreshold = 0, bool releaseActive = false);
     
     void run();
 
@@ -39,11 +41,18 @@ class ButtonModule : public StateMachine
     uint16_t getRelease();
 
     eventTypes getEvent(uint8_t* pressDuration);
-  //---------------------------------------------------
+    //---------------------------------------------------
+    // Event object interface
 
-  private:    
+    bool getEvent(ButtonEvent* event = nullptr);
+    //---------------------------------------------------
+
+  protected:    
     uint8_t port;
     uint8_t pin;
+    ButtonEvent *buttonEvent;
+    uint8_t longPressThreshold;
+    bool releaseActive;
     bool pressedPinState;
     bool eventPinState;
     bool currentPinState;
@@ -71,6 +80,6 @@ class ButtonModule : public StateMachine
     internalEventTypes eventCheck();
 };
 
-} // end namespace ArdMod::Std
+} // end namespace HardMod::Std
 
 #endif

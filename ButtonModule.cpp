@@ -2,7 +2,7 @@
 #include "swTimer.h"
 #include "hw_gpio.h"
 
-namespace HardwareModule::Std
+namespace HardMod::Std
 {
 
 #define RELEASED 1
@@ -13,8 +13,10 @@ namespace HardwareModule::Std
 
 #define RUN_PERIOD_mS 20
 
-ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState)
+ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool ,
+  ButtonEvent *buttonEvent, uint8_t longPressThreshold, bool releaseActive)
 : port(port), pin(pin), pressedPinState(pressedPinState)
+, buttonEvent(buttonEvent), longPressThreshold(longPressThreshold), releaseActive(releaseActive)
 {
   this->currentState = RELEASED;
   this->eventPinState = this->pressedPinState;
@@ -45,8 +47,32 @@ ButtonModule::eventTypes ButtonModule::getEvent(uint8_t* pressDuration)
   {
     *pressDuration = this->pressedCount;
   }
-  this->eventType = None;  // clear event
+  this->eventType = None;  // clear event (flag inetrface)
+  if(this->buttonEvent != nullptr)
+  {
+    // clear event object (event object interface)
+    this->buttonEvent->clear();
+  }
   return ret;
+}
+
+bool ButtonModule::getEvent(ButtonEvent* event)
+{
+  this->eventType = None;  // clear event (flag inetrface)
+
+  if(this->buttonEvent->getAction() == EVENT__NONE)
+  {
+    // no action has occurred
+    return false;
+  }
+  else
+  {
+    if(event != nullptr)
+    {
+      event = this->buttonEvent;
+    }
+    return true;
+  }
 }
 //---------------------------------------------------
 ButtonModule::internalEventTypes ButtonModule::eventCheck()
@@ -102,7 +128,12 @@ uint8_t ButtonModule::released()
   ButtonModule::internalEventTypes event = this->eventCheck();
   if(event == Edge)
   {
-    this->eventType = Pressed;
+    this->eventType = Pressed;    // set event code (flag interface)
+    if(this->buttonEvent != nullptr)
+    {
+      // set event object's action code (event object interface)
+      this->buttonEvent->setAction(BUTTONEVENT__PRESSED); 
+    }
     this->pressedCount = 0;
     return PRESSED;
   }

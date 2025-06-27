@@ -2,14 +2,13 @@
 #define BUTTONEVENT_HPP_
 
 #include "HardMod_Event.hpp"
-#include "ButtonModule.hpp"
 
 #define BUTTONEVENT__PRESSED 'P'
 #define BUTTONEVENT__LONGPRESS 'L'
 #define BUTTONEVENT__RELEASED 'R'
 #define BUTTONEVENT__STUCK 'S'
 
-namespace HardMod
+namespace HardMod::Std
 {
 class ButtonEvent: public Event
 {
@@ -20,8 +19,12 @@ class ButtonEvent: public Event
     ButtonEvent();
     void setPressDuration(uint8_t pressDuration);
 
+    //--------------------
     // Over-ridden base class methods
     uint8_t serialise(char* str);
+
+    void clear();
+    //--------------------
 };
 
 } // end namespace HardMod

@@ -108,8 +108,11 @@ char socketRxData[SOCKET_RX_DATA_LEN] = {0};
 char socketTxData[SOCKET_RX_DATA_LEN] = {0};
 uint16_t socketRxDataLen;
 //-----------------------
+
+HardMod::Std::ButtonEvent button0Event;
+
 // Button: Pin B4 (Pin 12)
-HardwareModule::Std::ButtonModule button0(GPIO_REG__PORTB, 4, false);
+HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 4, false, &button0Event);
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
@@ -156,16 +159,28 @@ void loop() {
   
   cli();
   button0.run();
-  HardwareModule::Std::ButtonModule::eventTypes event = button0.getEvent(&pressDuration);
-  if(event == HardwareModule::Std::ButtonModule::eventTypes::Pressed)
+  // HardMod::Std::ButtonModule::eventTypes event = button0.getEvent(&pressDuration);
+  // if(event == HardMod::Std::ButtonModule::eventTypes::Pressed)
+  // {
+  //   sprintf(socketTxData, "%s\0", "PR");
+  //   buttonSocket.sendData(socketTxData, 2, true);
+  // }
+  // else if(event == HardMod::Std::ButtonModule::eventTypes::Released)
+  // {
+  //   sprintf(socketTxData, "%s\0", "RL");
+  //   buttonSocket.sendData(socketTxData, 2, true);
+  // }
+  if(button0.getEvent() == true)
   {
-    sprintf(socketTxData, "%s\0", "PR");
-    buttonSocket.sendData(socketTxData, 2, true);
-  }
-  else if(event == HardwareModule::Std::ButtonModule::eventTypes::Released)
-  {
-    sprintf(socketTxData, "%s\0", "RL");
-    buttonSocket.sendData(socketTxData, 2, true);
+    char action = button0Event.getAction();
+    
+    if(action == BUTTONEVENT__PRESSED)
+    {
+      uint8_t len = button0Event.serialise(socketTxData);
+      //sprintf(socketTxData, "%s\0", "PR");
+      buttonSocket.sendData(socketTxData, len, true);      
+    }
+    button0Event.clear();
   }
   sei();
 
