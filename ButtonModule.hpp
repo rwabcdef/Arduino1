@@ -26,7 +26,7 @@ class ButtonModule : public StateMachine
     };
 
     ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState,
-      ButtonEvent *buttonEvent = nullptr, uint8_t longPressThreshold = 0, bool releaseActive = false);
+      ButtonEvent *buttonEvent = nullptr, bool releaseActive = false, uint8_t longPressThreshold = 0);
     
     void run();
 

@@ -18,6 +18,7 @@ class ButtonEvent: public Event
   public:
     ButtonEvent();
     void setPressDuration(uint8_t pressDuration);
+    uint8_t getPressDuration();
 
     //--------------------
     // Over-ridden base class methods

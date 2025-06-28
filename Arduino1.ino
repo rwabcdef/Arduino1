@@ -112,7 +112,7 @@ uint16_t socketRxDataLen;
 HardMod::Std::ButtonEvent button0Event;
 
 // Button: Pin B4 (Pin 12)
-HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 4, false, &button0Event);
+HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 4, false, &button0Event, true);
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");

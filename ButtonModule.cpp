@@ -14,7 +14,7 @@ namespace HardMod::Std
 #define RUN_PERIOD_mS 20
 
 ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool ,
-  ButtonEvent *buttonEvent, uint8_t longPressThreshold, bool releaseActive)
+  ButtonEvent *buttonEvent, bool releaseActive, uint8_t longPressThreshold)
 : port(port), pin(pin), pressedPinState(pressedPinState)
 , buttonEvent(buttonEvent), longPressThreshold(longPressThreshold), releaseActive(releaseActive)
 {
@@ -163,7 +163,16 @@ uint8_t ButtonModule::pressed()
   }
   else if(event == Edge)
   {
+    // Button released
     this->eventType = Released;
+    if((this->buttonEvent != nullptr) && (this->releaseActive == true))
+    {
+      // set event object's action code (event object interface)
+      this->buttonEvent->setAction(BUTTONEVENT__RELEASED);
+      
+      // Set the press duration
+      this->buttonEvent->setPressDuration(this->pressedCount);
+    }
     this->eventPinState = this->pressedPinState;
     return RELEASED;
   }

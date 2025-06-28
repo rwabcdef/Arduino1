@@ -14,6 +14,11 @@ void ButtonEvent::setPressDuration(uint8_t pressDuration)
   this->pressDuration = pressDuration;
 }
 
+uint8_t ButtonEvent::getPressDuration()
+{
+  return this->pressDuration;
+}
+
 uint8_t ButtonEvent::serialise(char* str)
 {
   uint8_t index = 0;
@@ -30,7 +35,8 @@ uint8_t ButtonEvent::serialise(char* str)
 
 void ButtonEvent::clear()
 {
-  this->clr();
+  this->clr();         // base class clr()
+  this->pressDuration = 0;
 }
 
 } // end namespace HardMod
