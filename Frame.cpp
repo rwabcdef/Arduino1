@@ -108,12 +108,12 @@ void Frame::incRollCode(uint16_t* rollCode)
   else if(Frame::LEN_ROLLCODE == 2) { maxValue = 99; }
   else { maxValue = 999; }
 
+  (*rollCode)++;
+
   if(*rollCode >= maxValue)
   {
     *rollCode = 0;
   }
-
-  (*rollCode)++;
 }
 
 void Frame::int3dToStr(const uint16_t value, char* pStr)

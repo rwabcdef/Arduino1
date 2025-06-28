@@ -14,6 +14,7 @@
 #include "StateMachine.hpp"
 #include "Frame.hpp"
 #include "DebugUser.hpp"
+#include "HardMod_Event.hpp"
 
 namespace SerLink
 {
@@ -57,6 +58,9 @@ public:
 
   // Returns the send status, and clears it.
   uint8_t getAndClearSendStatus();
+
+  // Serialises the event and then sends the data.
+  bool sendEvent(HardMod::Event &event, char* buffer, bool ack);
 
   //-------------------------------------------
   // Lower (i.e. transport) Interface

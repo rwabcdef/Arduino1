@@ -157,7 +157,7 @@ void loop() {
   
   uint16_t txFrameCount = 0;
   
-  cli();
+  //cli();
   button0.run();
   // HardMod::Std::ButtonModule::eventTypes event = button0.getEvent(&pressDuration);
   // if(event == HardMod::Std::ButtonModule::eventTypes::Pressed)
@@ -172,17 +172,19 @@ void loop() {
   // }
   if(button0.getEvent() == true)
   {
-    char action = button0Event.getAction();
+    //char action = button0Event.getAction();
+
+    buttonSocket.sendEvent(button0Event, socketTxData, true);
     
-    if(action == BUTTONEVENT__PRESSED)
-    {
-      uint8_t len = button0Event.serialise(socketTxData);
-      //sprintf(socketTxData, "%s\0", "PR");
-      buttonSocket.sendData(socketTxData, len, true);      
-    }
+    // if(action == BUTTONEVENT__PRESSED)
+    // {
+    //   // uint8_t len = button0Event.serialise(socketTxData);
+    //   // buttonSocket.sendData(socketTxData, len, true);     
+    //   buttonSocket.sendEvent(button0Event, socketTxData, true);
+    // }
     button0Event.clear();
   }
-  sei();
+  //sei();
 
   /*
   cli();
