@@ -25,7 +25,6 @@ void HwModule::InitAdc(AdcPrescalerValues psValue)
 
   // Set ADC voltage ref to AVCC with external capacitor at AREF pin
   bitSet(ADMUX, REFS0);
-  //if (bit_is_clear(ADCSRA, ADSC)){}
 }
 
 void HwModule::setAdcInput(AdcInputValues input)
@@ -42,6 +41,20 @@ void HwModule::setAdcInput(AdcInputValues input)
 void HwModule::startAdcConversion()
 {
   bitSet(ADCSRA, ADSC);
+}
+
+bool HwModule::isAdcConversionComplete()
+{
+  if (bit_is_clear(ADCSRA, ADSC))
+  {
+    // conversion is complete
+    return true;
+  }
+  else
+  {
+    // conversion is NOT complete
+    return false;
+  }
 }
 
 } // end namespace HardMod::Std

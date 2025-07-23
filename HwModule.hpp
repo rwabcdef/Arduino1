@@ -35,6 +35,8 @@ class HwModule
 
     static void startAdcConversion();
 
+    static bool isAdcConversionComplete();
+
     static void setAdcInput(AdcInputValues input);
 };
 } // end namespace HardMod::Std
