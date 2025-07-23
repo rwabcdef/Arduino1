@@ -18,10 +18,24 @@ class HwModule
       PS_64,
       PS_128
     };
+
+    enum AdcInputValues{
+      ADC0 = 0,
+      ADC1,
+      ADC2,
+      ADC3,
+      ADC4,
+      ADC5
+
+    };
     
     static void InitAdc(AdcPrescalerValues psValue);
 
-    static void enable(bool enable);
+    static void enableAdc(bool enable);
+
+    static void startAdcConversion();
+
+    static void setAdcInput(AdcInputValues input);
 };
 } // end namespace HardMod::Std
 

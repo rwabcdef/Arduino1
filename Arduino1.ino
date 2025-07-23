@@ -18,6 +18,7 @@ Serial monitor Ack frame: TST16A452
 // #include "System0.hpp"
 #include "Socket.hpp"
 #include "ButtonModule.hpp"
+#include "HwModule.hpp"
 
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
@@ -146,6 +147,15 @@ void setup() {
   //gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
 
   sprintf(txData, "AAA", nullptr);
+
+  //--------------------------
+  HardMod::Std::HwModule::InitAdc(HardMod::Std::HwModule::PS_128);
+
+  // Pin A0 (ADC0 - Pin23)
+  HardMod::Std::HwModule::setAdcInput(HardMod::Std::HwModule::ADC0);
+
+  HardMod::Std::HwModule::startAdcConversion();
+
 } // end setup()
 
 
