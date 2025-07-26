@@ -149,12 +149,12 @@ void setup() {
   sprintf(txData, "AAA", nullptr);
 
   //--------------------------
-  HardMod::Std::HwModule::InitAdc(HardMod::Std::HwModule::PS_128);
+  HardMod::Std::HwModule::Adc_init(HardMod::Std::HwModule::PS_128);
 
   // Pin A0 (ADC0 - Pin23)
-  HardMod::Std::HwModule::setAdcInput(HardMod::Std::HwModule::ADC0);
+  HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
 
-  HardMod::Std::HwModule::startAdcConversion();
+  HardMod::Std::HwModule::Adc_startConversion();
 
 } // end setup()
 

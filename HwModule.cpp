@@ -4,7 +4,7 @@
 namespace HardMod::Std
 {
   
-void HwModule::InitAdc(AdcPrescalerValues psValue)
+void HwModule::Adc_init(AdcPrescalerValues psValue)
 {
   uint8_t mask = 0;
   switch(psValue)
@@ -27,7 +27,7 @@ void HwModule::InitAdc(AdcPrescalerValues psValue)
   bitSet(ADMUX, REFS0);
 }
 
-void HwModule::setAdcInput(AdcInputValues input)
+void HwModule::Adc_setInput(AdcInputValues input)
 {
   uint8_t value = (uint8_t) input;
   if(value <= 6)
@@ -38,12 +38,12 @@ void HwModule::setAdcInput(AdcInputValues input)
   }
 }
 
-void HwModule::startAdcConversion()
+void HwModule::Adc_startConversion()
 {
   bitSet(ADCSRA, ADSC);
 }
 
-bool HwModule::isAdcConversionComplete()
+bool HwModule::Adc_isConversionComplete()
 {
   if (bit_is_clear(ADCSRA, ADSC))
   {
@@ -55,6 +55,19 @@ bool HwModule::isAdcConversionComplete()
     // conversion is NOT complete
     return false;
   }
+}
+
+uint16_t HwModule::Adc_getResultRaw()
+{
+  return ADC;
+}
+
+uint8_t HwModule::Adc_getResultPercent()
+{
+  uint32_t res = ADC * 3;
+  res += (res >> 4);
+  res = (res >> 5);
+  return (uint8_t) res;
 }
 
 } // end namespace HardMod::Std

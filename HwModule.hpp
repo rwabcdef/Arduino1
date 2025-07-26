@@ -29,15 +29,19 @@ class HwModule
 
     };
     
-    static void InitAdc(AdcPrescalerValues psValue);
+    static void Adc_init(AdcPrescalerValues psValue);
 
-    static void enableAdc(bool enable);
+    static void Adc_enable(bool enable);
 
-    static void startAdcConversion();
+    static void Adc_startConversion();
 
-    static bool isAdcConversionComplete();
+    static bool Adc_isConversionComplete();
 
-    static void setAdcInput(AdcInputValues input);
+    static void Adc_setInput(AdcInputValues input);
+
+    static uint16_t Adc_getResultRaw();
+
+    static uint8_t Adc_getResultPercent();
 };
 } // end namespace HardMod::Std
 
