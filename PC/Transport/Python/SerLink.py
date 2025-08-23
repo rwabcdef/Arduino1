@@ -1,14 +1,14 @@
 import serial
 import traceback, time, threading, datetime , queue
 
-# python SerLink.py
+# python Transport.py
 #---------------------------------------------------
-class SerLink:
+class Transport:
   def __init__(self, port, baudrate):
-    self.debug = SerLink.Debug()
-    self.port = SerLink.Port(port, baudrate)
-    self.writer = SerLink.Writer(self.port, debug=self.debug, ackWaitTime=1)
-    self.reader = SerLink.Reader(self.port, writer=self.writer, debug=self.debug)
+    self.debug = Transport.Debug()
+    self.port = Transport.Port(port, baudrate)
+    self.writer = Transport.Writer(self.port, debug=self.debug, ackWaitTime=1)
+    self.reader = Transport.Reader(self.port, writer=self.writer, debug=self.debug)
 
   def start(self):
     self.port.init()
@@ -77,15 +77,15 @@ class SerLink:
       self.data = str[start:end]
 
     def toString(self):
-      if(self.type == SerLink.Frame.TYPE_ACK):
+      if(self.type == Transport.Frame.TYPE_ACK):
         s = '%s%s%s%s\n' % (self.protocol, self.type, self.rollCode, self.dataLen)
       else:
         if(self.data == None):
-          s = '%s%s%s%s\n' % (self.protocol, self.type, SerLink.Utils.padIntLeft(self.rollCode, SerLink.Frame.LEN_ROLLCODE),
-                              SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN))
+          s = '%s%s%s%s\n' % (self.protocol, self.type, Transport.Utils.padIntLeft(self.rollCode, Transport.Frame.LEN_ROLLCODE),
+                              Transport.Utils.padIntLeft(self.dataLen, Transport.Frame.LEN_DATALEN))
         else:
-          s = '%s%s%s%s%s\n' % (self.protocol, self.type, SerLink.Utils.padIntLeft(self.rollCode, SerLink.Frame.LEN_ROLLCODE),
-                                SerLink.Utils.padIntLeft(self.dataLen, SerLink.Frame.LEN_DATALEN), self.data)
+          s = '%s%s%s%s%s\n' % (self.protocol, self.type, Transport.Utils.padIntLeft(self.rollCode, Transport.Frame.LEN_ROLLCODE),
+                                Transport.Utils.padIntLeft(self.dataLen, Transport.Frame.LEN_DATALEN), self.data)
       return s
 
     def print(self):
@@ -98,7 +98,8 @@ class SerLink:
 
   class Port:
     def __init__(self, port, baudrate, timeout=1):
-      self.port = serial.Serial(port, baudrate, timeout=timeout)
+      if not port == 'Dummy':
+        self.port = serial.Serial(port, baudrate, timeout=timeout)
       
     def init(self):
       if self.port.isOpen():
@@ -162,7 +163,7 @@ class SerLink:
       self.txFrame = None
       self.txStatus = None
       self.outputMutex = threading.Lock()
-      self.outputMessage = SerLink.Writer.OutputMessage()
+      self.outputMessage = Transport.Writer.OutputMessage()
 
     def print(self, s):
       if(self.debug != None):
@@ -171,20 +172,20 @@ class SerLink:
         print(s)
 
     def quit(self):
-      msg = SerLink.Writer.InputMessage(SerLink.Writer.MSG_TYPE_QUIT)
+      msg = Transport.Writer.InputMessage(Transport.Writer.MSG_TYPE_QUIT)
       self.inputQueue.put(msg)
 
     def setAckFrame(self, frame):
-      msg = SerLink.Writer.InputMessage(SerLink.Writer.MSG_TYPE_ACK_FRAME, data=frame)
+      msg = Transport.Writer.InputMessage(Transport.Writer.MSG_TYPE_ACK_FRAME, data=frame)
       self.inputQueue.put(msg)
 
     def sendFrameWait(self, frame):
       self.print('Writer.sendFrameWait start: %s' % frame.toString()[:-1])
 
-      msg = SerLink.Writer.InputMessage(SerLink.Writer.MSG_TYPE_TX_FRAME, data=frame)
+      msg = Transport.Writer.InputMessage(Transport.Writer.MSG_TYPE_TX_FRAME, data=frame)
 
       self.outputMutex.acquire()
-      self.outputMessage.txStatus = SerLink.Writer.STATUS_BUSY
+      self.outputMessage.txStatus = Transport.Writer.STATUS_BUSY
       self.outputMutex.release()
 
       self.inputQueue.put(msg)
@@ -195,7 +196,7 @@ class SerLink:
         txStatus = self.outputMessage.txStatus
         self.outputMutex.release()
 
-        if(txStatus == SerLink.Writer.STATUS_BUSY):
+        if(txStatus == Transport.Writer.STATUS_BUSY):
           time.sleep(waitIteration)
         else:
           break
@@ -225,7 +226,7 @@ class SerLink:
             # We are currently waiting for an ack frame - but none has arrived within the timeout
 
             self.outputMutex.acquire()
-            self.outputMessage.txStatus = SerLink.Writer.STATUS_TIMEOUT
+            self.outputMessage.txStatus = Transport.Writer.STATUS_TIMEOUT
             self.outputMessage.ackData = None
             self.outputMutex.release()
             self.ackWait = False
@@ -235,18 +236,18 @@ class SerLink:
 
         else:
           # process input message / received frame
-          if(msg.msgType == SerLink.Writer.MSG_TYPE_QUIT):
+          if(msg.msgType == Transport.Writer.MSG_TYPE_QUIT):
             # quit thread
             break
 
           if(self.ackWait == True):
             # We are currently waiting for an ack frame
 
-            if(msg.msgType == SerLink.Writer.MSG_TYPE_TX_FRAME):
+            if(msg.msgType == Transport.Writer.MSG_TYPE_TX_FRAME):
               # We are currently waiting for an ack frame - so ignore new frame to be trasmitted
               continue
 
-            elif(msg.msgType == SerLink.Writer.MSG_TYPE_ACK_FRAME):
+            elif(msg.msgType == Transport.Writer.MSG_TYPE_ACK_FRAME):
               ackFrame = msg.data
               self.ackWait = False
 
@@ -259,16 +260,16 @@ class SerLink:
 
                 
 
-                if(int(ackFrame.dataLen) < SerLink.Frame.ACK_OK):
-                  self.outputMessage.txStatus = SerLink.Writer.STATUS_OK_DATA
+                if(int(ackFrame.dataLen) < Transport.Frame.ACK_OK):
+                  self.outputMessage.txStatus = Transport.Writer.STATUS_OK_DATA
                   self.outputMessage.ackData = ackFrame.data
                 else:
-                  self.outputMessage.txStatus = SerLink.Writer.STATUS_OK
+                  self.outputMessage.txStatus = Transport.Writer.STATUS_OK
                   self.outputMessage.ackData = None
 
               else:
                 # This is NOT the corresponding ack for the frame just sent
-                self.outputMessage.txStatus = SerLink.Writer.STATUS_TIMEOUT
+                self.outputMessage.txStatus = Transport.Writer.STATUS_TIMEOUT
                 self.outputMessage.ackData = None
 
               self.outputMutex.release()
@@ -279,7 +280,7 @@ class SerLink:
           else:
             # We are NOT currently waiting for an ack frame
             
-            if(msg.msgType == SerLink.Writer.MSG_TYPE_TX_FRAME):
+            if(msg.msgType == Transport.Writer.MSG_TYPE_TX_FRAME):
               # send frame
 
               self.txFrame = msg.data
@@ -291,14 +292,14 @@ class SerLink:
 
               self.print('Writer Tx Frame end')
 
-              if(self.txFrame.type == SerLink.Frame.TYPE_TRANSMISSION):
+              if(self.txFrame.type == Transport.Frame.TYPE_TRANSMISSION):
                 # We DO expect an ack back
                 self.ackWait = True
               else:
                 # We do NOT expect an ack back
                 self.ackWait = False
 
-            elif(msg.msgType == SerLink.Writer.MSG_TYPE_ACK_FRAME):
+            elif(msg.msgType == Transport.Writer.MSG_TYPE_ACK_FRAME):
               # ignore ack frame - as we are not waiting for one
               continue
 
@@ -313,9 +314,9 @@ class SerLink:
       self.port = port
       self.writer = writer
       self.quitFlag = False
-      self.rxFrame = SerLink.Frame()
+      self.rxFrame = Transport.Frame()
       self.debug = debug
-      #self.ackFrame = SerLink.Frame()
+      #self.ackFrame = Transport.Frame()
 
     def print(self, s):
       if(self.debug != None):
@@ -337,23 +338,23 @@ class SerLink:
 
         self.print('rx[%d]> %s' % (len(line), line))
 
-        if(len(line) >= SerLink.Frame.LEN_HEADER + 1):
+        if(len(line) >= Transport.Frame.LEN_HEADER + 1):
           self.rxFrame.fromString(line)
           self.print(self.rxFrame.sprint())
 
-          if(self.rxFrame.type == SerLink.Frame.TYPE_TRANSMISSION):
+          if(self.rxFrame.type == Transport.Frame.TYPE_TRANSMISSION):
             # send ack
-            ackFrame = SerLink.Frame(self.rxFrame.protocol, SerLink.Frame.TYPE_ACK, self.rxFrame.rollCode, SerLink.Frame.ACK_OK)
+            ackFrame = Transport.Frame(self.rxFrame.protocol, Transport.Frame.TYPE_ACK, self.rxFrame.rollCode, Transport.Frame.ACK_OK)
 
             # ack send
             ackFrameStr = ackFrame.toString()
             self.port.writeLine(ackFrameStr)
 
-          elif(self.rxFrame.type == SerLink.Frame.TYPE_ACK):
+          elif(self.rxFrame.type == Transport.Frame.TYPE_ACK):
             # An ack frame has been received - so pass it to the writer
             self.writer.setAckFrame(self.rxFrame)
 
-        #elif(len(line) >= SerLink.Frame.LEN_ACK):
+        #elif(len(line) >= Transport.Frame.LEN_ACK):
 
           
 
@@ -362,9 +363,9 @@ class SerLink:
 
   class Debug:
     def __init__(self):
-      self.threadNameResolver = SerLink.Debug.ThreadNameResolver()
-      self.timeStamper = SerLink.Debug.TimeStamper()
-      self.printer = SerLink.Debug.Printer(self.threadNameResolver, self.timeStamper)
+      self.threadNameResolver = Transport.Debug.ThreadNameResolver()
+      self.timeStamper = Transport.Debug.TimeStamper()
+      self.printer = Transport.Debug.Printer(self.threadNameResolver, self.timeStamper)
 
     class ThreadNameResolver:
       def __init__(self):
@@ -423,11 +424,11 @@ class SerLink:
 # ECHO1T076004abcd LED01T805003abc DBG01T156003ASD DBG01T156003aSD
 
 # Run:
-# python SerLink.py
+# python Transport.py
 if __name__ == '__main__':
   print('start 1')
 
-  ser = SerLink('COM3', 19200)
+  ser = Transport('COM3', 19200)
   ser.debug.threadNameResolver.addCurrentThread('MAIN ')
   ret = ser.start()
 
@@ -443,36 +444,36 @@ if __name__ == '__main__':
 
     if inStr == 't':
       # LED01T345004abcd
-      txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 345, 4, "abcd") 
+      txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 345, 4, "abcd") 
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     elif inStr == 'tn':
       # NOACKT956003byh
-      txFrame = SerLink.Frame("NOACK", SerLink.Frame.TYPE_TRANSMISSION, 956, 3, "byh") 
+      txFrame = Transport.Frame("NOACK", Transport.Frame.TYPE_TRANSMISSION, 956, 3, "byh") 
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     # ECHO1T076004abcd
     elif inStr == 'te':
       # NOACKT956003byh
-      txFrame = SerLink.Frame("ECHO1", SerLink.Frame.TYPE_TRANSMISSION, 97, 4, "abcd") 
+      txFrame = Transport.Frame("ECHO1", Transport.Frame.TYPE_TRANSMISSION, 97, 4, "abcd") 
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     #DBG01T156003ASD
     elif inStr == 'td1':
-      txFrame = SerLink.Frame("DBG01", SerLink.Frame.TYPE_TRANSMISSION, 45, 3, "ASD") 
+      txFrame = Transport.Frame("DBG01", Transport.Frame.TYPE_TRANSMISSION, 45, 3, "ASD") 
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     elif inStr == 'tledon':
-      txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 45, 1, "1") 
+      txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 45, 1, "1") 
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     elif inStr == 'tledoff':
-      txFrame = SerLink.Frame("LED01", SerLink.Frame.TYPE_TRANSMISSION, 45, 1, "0") 
+      txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 45, 1, "0") 
       ret = ser.sendFrameWait(txFrame)
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
