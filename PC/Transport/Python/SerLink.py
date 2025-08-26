@@ -1,12 +1,88 @@
 import serial
 import traceback, time, threading, datetime , queue
 
-# python Transport.py
+# python SerLink.py
 #---------------------------------------------------
-class Transport:
+class Socket:
+  def __init__(self, parent, protocol, initialRollCode=0, onReceive=None):
+    self.parent = parent
+    self.protocol = protocol
+    self.rollCode = initialRollCode
+    self.onReceive = onReceive
+    self.sendResponseEvent = threading.Event(time=2)
+    self.sendAckFrame = None
+
+  def sendDataWait(self, data, ack=True):
+    if ack:
+      frameType = Transport.Frame.TYPE_TRANSMISSION
+      self.sendAckFrame = None # clear ack frame
+    else:
+      frameType = Transport.Frame.TYPE_UNIDIRECTION
+    dataLen = len(data)
+    txFrame = Transport.Frame(self.protocol, frameType, self.rollCode, dataLen, data)
+    self.parent.sendFrameWait(txFrame)
+
+    # wait for transport layer to send frame, and for ack to be returned if ack = True
+    self.sendResponseEvent.wait()
+
+    if ack:
+      if self.sendAckFrame == None:
+        # error: ack frame shold be set
+        pass
+      else:
+        # check tx and ack frame roll codes match
+        pass
+    else:
+      # We are not waiting for an ack - so do nothing
+      pass
+
+    self.sendResponseEvent.clear()
+
+  # Used by transport layer to signal that a send operation has completed
+  # set the ack frame after a data send
+  def sendDone(self, ackFrame=None):
+    self.sendAckFrame = ackFrame
+    self.sendResponseEvent.set()
+
+
+class SerLink:
   def __init__(self, port, baudrate):
+    self.transport = Transport(port, baudrate, self)
+    self.sockets = dict()  # dictionary of sockets
+
+  def start(self):
+    self.transport.start()
+
+  def close(self):
+    self.transport.close()
+
+  def acquireSocket(self, protocol, initialRollCode=0):
+    socket = Socket(protocol, initialRollCode)
+    self.sockets[protocol] = socket
+    return socket
+  
+  def sendFrameWait(self, frame):
+    protocol = frame.protocol
+    rollCode = frame.rollCode
+    ret = self.transport.sendFrameWait(frame)
+
+  # Used by transport layer to signal that a send operation has completed
+  # set the ack frame if one is returned
+  def sendDone(self, protocol, ackFrame=None):
+    if protocol in self.sockets.keys():
+      # the protocol has been found in self.sockets
+      socket = self.sockets[protocol]
+      socket.sendDone(ackFrame)
+    else:
+      # the protocol has NOT been found in self.sockets - error
+      pass
+
+
+class Transport:
+  def __init__(self, port, baudrate, parent):
     self.debug = Transport.Debug()
     self.port = Transport.Port(port, baudrate)
+    self.parent = parent
     self.writer = Transport.Writer(self.port, debug=self.debug, ackWaitTime=1)
     self.reader = Transport.Reader(self.port, writer=self.writer, debug=self.debug)
 
@@ -245,7 +321,8 @@ class Transport:
 
             if(msg.msgType == Transport.Writer.MSG_TYPE_TX_FRAME):
               # We are currently waiting for an ack frame - so ignore new frame to be trasmitted
-              continue
+              # but re-add it to the input queue so that it is not lost, and can be sent later
+              self.inputQueue.put(msg)
 
             elif(msg.msgType == Transport.Writer.MSG_TYPE_ACK_FRAME):
               ackFrame = msg.data
@@ -261,9 +338,11 @@ class Transport:
                 
 
                 if(int(ackFrame.dataLen) < Transport.Frame.ACK_OK):
+                  # the ack frame contains data
                   self.outputMessage.txStatus = Transport.Writer.STATUS_OK_DATA
                   self.outputMessage.ackData = ackFrame.data
                 else:
+                  # the ack frame does not contains data
                   self.outputMessage.txStatus = Transport.Writer.STATUS_OK
                   self.outputMessage.ackData = None
 
@@ -275,6 +354,7 @@ class Transport:
               self.outputMutex.release()
                 
             else:
+              # not an ack frame - so dom nothing
               continue
             
           else:
