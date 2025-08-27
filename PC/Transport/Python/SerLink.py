@@ -4,67 +4,116 @@ import traceback, time, threading, datetime , queue
 # python SerLink.py
 #---------------------------------------------------
 class Socket:
-  def __init__(self, parent, protocol, initialRollCode=0, onReceive=None):
+  class SendResultMessage:
+    def __init__(self, txStatus, ackData=None):
+      self.txStatus = txStatus
+      self.ackData = ackData
+
+  def __init__(self, parent, protocol, id='', initialRollCode=0, onReceive=None, debugOn=False):
     self.parent = parent
     self.protocol = protocol
     self.rollCode = initialRollCode
-    self.onReceive = onReceive
+    self.id = id
+    self.onReceive = onReceive # on receive of a frame callback
+    self.debugOn = debugOn
     self.sendResponseEvent = threading.Event(time=2)
-    self.sendAckFrame = None
+    self.txStatus = None
+    self.sendAckData = None # ack data that can be returned after a send
+    self.rxQueue = queue.Queue(maxsize=10) # receive queue
 
   def sendDataWait(self, data, ack=True):
     if ack:
       frameType = Transport.Frame.TYPE_TRANSMISSION
-      self.sendAckFrame = None # clear ack frame
+      self.sendAckData = None # clear ack data
     else:
       frameType = Transport.Frame.TYPE_UNIDIRECTION
+    self.txStatus = None
     dataLen = len(data)
     txFrame = Transport.Frame(self.protocol, frameType, self.rollCode, dataLen, data)
-    self.parent.sendFrameWait(txFrame)
+    self.parent.sendFrame(txFrame, self.sendDone)
 
     # wait for transport layer to send frame, and for ack to be returned if ack = True
     self.sendResponseEvent.wait()
 
-    if ack:
-      if self.sendAckFrame == None:
-        # error: ack frame shold be set
-        pass
-      else:
-        # check tx and ack frame roll codes match
-        pass
-    else:
-      # We are not waiting for an ack - so do nothing
-      pass
+    # if ack:
+    #   if self.sendAckFrame == None:
+    #     # error: ack frame shold be set
+    #     pass
+    #   else:
+    #     # check tx and ack frame roll codes match
+    #     pass
+    # else:
+    #   # We are not waiting for an ack - so do nothing
+    #   pass
 
     self.sendResponseEvent.clear()
 
-  # Used by transport layer to signal that a send operation has completed
-  # set the ack frame after a data send
-  def sendDone(self, ackFrame=None):
-    self.sendAckFrame = ackFrame
+    result = Socket.SendResultMessage(self.txStatus, self.sendAckData)
+    return result               
+
+  # Callback used by session layer to signal that a send operation has completed.
+  # sets the txStatus and ack data (if applicable) after a data send
+  def sendDone(self, txStatus, ackData=None):
+    self.txStatus = txStatus
+    self.sendAckData = ackData
     self.sendResponseEvent.set()
 
+  # Used by session layer to pass a received frame (not an ack) to the socket
+  def handleReceive(self, rxFrame):
 
+    if self.onReceive == None:
+      pass
+
+# Session layer class
 class SerLink:
-  def __init__(self, port, baudrate):
+  class SendMessage:
+    MSG_TYPE_TX_FRAME = 1
+    MSG_TYPE_QUIT = 2
+
+    def __init__(self, msgType, frame=None, onDone=None):
+      self.msgType = msgType
+      self.frame = frame
+      self.onDone = onDone
+
+  def __init__(self, port, baudrate, debugOn=False):
     self.transport = Transport(port, baudrate, self)
+    self.debugOn = debugOn
     self.sockets = dict()  # dictionary of sockets
+    self.runThread = threading.Thread(target=self.run)
+    self.sendQueue = queue.Queue(maxsize=10) # send queue
 
   def start(self):
+    self.runThread.start()
     self.transport.start()
 
-  def close(self):
+  def quit(self):
+    quitMsg = SerLink.SendMessage(SerLink.SendMessage.MSG_TYPE_QUIT)
     self.transport.close()
 
-  def acquireSocket(self, protocol, initialRollCode=0):
-    socket = Socket(protocol, initialRollCode)
+  def acquireSocket(self, protocol, id='', initialRollCode=0, onReceive=None):
+    socket = Socket(protocol, id, initialRollCode, onReceive)
     self.sockets[protocol] = socket
     return socket
   
-  def sendFrameWait(self, frame):
-    protocol = frame.protocol
-    rollCode = frame.rollCode
-    ret = self.transport.sendFrameWait(frame)
+  def sendFrame(self, frame, onDone):
+    sendMsg = SerLink.SendMessage(SerLink.SendMessage.MSG_TYPE_TX_FRAME, frame, onDone)
+    self.sendQueue.put(sendMsg)
+
+
+  def run(self):
+
+    while(True):
+      msg = self.sendQueue.get()
+      if msg.type == SerLink.SendMessage.MSG_TYPE_QUIT:
+        break
+
+      elif msg.type == SerLink.SendMessage.MSG_TYPE_TX_FRAME:
+        frame = msg.frame
+        ret = self.transport.sendFrameWait(frame)
+
+        # call send done callback (Socket.sendDone)
+        msg.onDone(ret.txStatus, ret.ackData)
+
 
   # Used by transport layer to signal that a send operation has completed
   # set the ack frame if one is returned
