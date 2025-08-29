@@ -3,11 +3,44 @@ import traceback, time, threading, datetime , queue
 
 # python SerLink.py
 #---------------------------------------------------
+class App:
+  class Console:
+    class CLI:
+      def __init__(self):
+        self.queue = queue.Queue(maxsize=10)
+        self.runThread = threading.Thread(target=self.run)
+
+      def start(self):
+        self.runThread.start()
+
+      def close(self):
+        self.runThread.join()
+
+      def getCmd(self, timeoutSeconds=0.5):
+        cmd = None
+        try:
+          cmd = self.queue.get(timeout=timeoutSeconds)
+        except queue.Empty:
+          pass
+        return cmd
+
+      def run(self):
+        while(True):
+          inStr = input()
+          self.queue.put(inStr)
+          if inStr == 'q':
+            # quit
+            break
+          
+        print('CLI.run() end')
+
 class Socket:
   class SendResultMessage:
     def __init__(self, txStatus, ackData=None):
       self.txStatus = txStatus
       self.ackData = ackData
+
+  STATUS_TRANSPORT_ERROR = 55
 
   def __init__(self, parent, protocol, id='', initialRollCode=0, onReceive=None, debug=None,debugOn=False):
     self.parent = parent
@@ -21,10 +54,6 @@ class Socket:
     self.txStatus = None
     self.sendAckData = None # ack data that can be returned after a send
     self.rxQueue = queue.Queue(maxsize=10) # receive queue
-
-  def print(self, s):
-    if(self.debugOn):
-      self.debug.printer.print(s)
 
   def sendDataWait(self, data, ack=True):
     if ack:
@@ -40,17 +69,6 @@ class Socket:
     # wait for transport layer to send frame, and for ack to be returned if ack = True
     self.sendResponseEvent.wait(timeout=2)
 
-    # if ack:
-    #   if self.sendAckFrame == None:
-    #     # error: ack frame shold be set
-    #     pass
-    #   else:
-    #     # check tx and ack frame roll codes match
-    #     pass
-    # else:
-    #   # We are not waiting for an ack - so do nothing
-    #   pass
-
     self.sendResponseEvent.clear()
 
     # increment roll code
@@ -58,9 +76,17 @@ class Socket:
     if(self.rollCode > Transport.Frame.maxRollCode()):
       self.rollCode = 0
 
+    if self.txStatus == None:
+      # Session layer has not returned a result - error
+      self.txStatus = Socket.STATUS_TRANSPORT_ERROR
+
     result = Socket.SendResultMessage(self.txStatus, self.sendAckData)
     self.print('Socket [%s] send result: %s   ackData: %s' % (self.id, self.txStatus, self.sendAckData))
     return result               
+  
+  def print(self, s):
+    if(self.debugOn):
+      self.debug.printer.print(s)
 
   # Callback used by session layer to signal that a send operation has completed.
   # sets the txStatus and ack data (if applicable) after a data send

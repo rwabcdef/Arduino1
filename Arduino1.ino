@@ -20,6 +20,14 @@ Serial monitor Ack frame: TST16A452
 #include "ButtonModule.hpp"
 #include "HwModule.hpp"
 
+/*
+Hardware Config
+
+Green Led: Pin 13 (PB5)
+Red Led: Pin 12 (PB4)
+Button0: Pin 11 (PB3)
+*/
+
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
 
@@ -112,8 +120,8 @@ uint16_t socketRxDataLen;
 
 HardMod::Std::ButtonEvent button0Event;
 
-// Button: Pin B4 (Pin 12)
-HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 4, false, &button0Event, true);
+// Button: Pin B3 (Pin 11)
+HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 3, false, &button0Event, true);
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
@@ -136,12 +144,20 @@ void setup() {
 
   //strncpy(ledSocketPayload, "a1", 2);
 
+  //--------------------------
+  // Green Led
   // Pin B5 (Pin 13)
   gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__OUT);
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
   gpio_setPinLow(GPIO_REG__PORTB, 5);
+  //--------------------------
+  // Red Led
+  // Pin B4 (Pin 12)
+  gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__OUT);
+  //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
+  gpio_setPinLow(GPIO_REG__PORTB, 4);
   //--------------------------
   // Pin B4 (Pin 12)
   //gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
@@ -273,17 +289,35 @@ void loop() {
 
   // special case (does not send ack back): NOACKT234003asd
 
-  if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T8050011  LED01T8050010
+  if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T805002G1 LED01T805002G0 (old: LED01T8050011  LED01T8050010)
   {
-    if(socketRxData[0] == '1')
+    if(socketRxData[0] == 'G')
     {
-      gpio_setPinHigh(GPIO_REG__PORTB, 5);
+      // Green Led
+      if(socketRxData[1] == '1')
+      {
+        gpio_setPinHigh(GPIO_REG__PORTB, 5);
+      }
+      else if(socketRxData[1] == '0')
+      {
+        gpio_setPinLow(GPIO_REG__PORTB, 5);
+      }
+      else{ /* do nothing */ }
     }
-    else if(socketRxData[0] == '0')
+    else if(socketRxData[0] == 'R') // LED01T805002R1 LED01T805002R0
     {
-      gpio_setPinLow(GPIO_REG__PORTB, 5);
+      // Red Led
+      if(socketRxData[1] == '1')
+      {
+        gpio_setPinHigh(GPIO_REG__PORTB, 4);
+      }
+      else if(socketRxData[1] == '0')
+      {
+        gpio_setPinLow(GPIO_REG__PORTB, 4);
+      }
+      else{ /* do nothing */ }
     }
-    else{ /* do nothing */ }
+    
     memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
   }
 
