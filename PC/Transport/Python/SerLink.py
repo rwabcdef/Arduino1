@@ -72,8 +72,12 @@ class Socket:
   # Used by session layer to pass a received frame (not an ack) to the socket
   def handleReceive(self, rxFrame):
 
-    if self.onReceive == None:
-      pass
+    self.print('Socket [%s] rx frame: %s' % (self.id, rxFrame.toString()))
+    if self.onReceive == None:      
+      # put received frame onto own rx queue
+      self.rxQueue.put(rxFrame)
+    else:
+      self.onReceive(rxFrame)
 
 # Session layer class
 class SerLink:
@@ -88,15 +92,12 @@ class SerLink:
 
   def __init__(self, port, baudrate, debugOn=False):
     self.debug = Debug()
-    self.transport = Transport(port, baudrate, self, self.debug)
     self.debugOn = debugOn
+    self.transport = Transport(port, baudrate, self, self.debug, self.debugOn)
+    
     self.sockets = dict()  # dictionary of sockets
     self.runThread = threading.Thread(target=self.run)
     self.sendQueue = queue.Queue(maxsize=10) # send queue
-
-  def print(self, s):
-    if(self.debugOn):
-      self.debug.printer.print(s)
 
   def start(self):    
     self.runThread.start()
@@ -109,7 +110,6 @@ class SerLink:
     self.runThread.join()
     self.transport.close()
     
-
   def acquireSocket(self, protocol, id='', initialRollCode=0, onReceive=None, debug=None, debugOn=False):
     socket = Socket(self, protocol, id, initialRollCode, onReceive, self.debug, self.debugOn)
     self.sockets[protocol] = socket
@@ -143,6 +143,23 @@ class SerLink:
         msg.onDone(ret.txStatus, ret.ackData)
 
     self.print('end run()')
+
+
+  def print(self, s):
+    if(self.debugOn):
+      self.debug.printer.print(s)    
+
+  # Used by transport layer to pass a received frame to this object (session layer object)
+  def handleReceive(self, rxFrame):
+    protocol = rxFrame.protocol
+    self.print('Transport.handleReceive() rxFrame: %s     protocol: %s' % (rxFrame.toString(), protocol))
+    if(protocol in self.sockets.keys()):
+      socket = self.sockets[protocol]
+      socket.handleReceive(rxFrame)
+    else:
+      # socket not found - so do nothing
+      self.print('Transport.handleReceive() socket not found')
+      #pass
 
 
   # Used by transport layer to signal that a send operation has completed
@@ -193,8 +210,10 @@ class Transport:
     ret = self.writer.sendFrameWait(frame)
     return ret
 
-  def setRxFrame(self, rxFrame):
-    
+  def handleReceive(self, rxFrame):
+    # pass received frame to parent object (session layer object)
+    self.print('Transport.handleReceive() rxFrame: %s' % rxFrame.toString())
+    self.parent.handleReceive(rxFrame)
   
   class Frame:
     TYPE_TRANSMISSION = 'T'
@@ -506,7 +525,7 @@ class Transport:
     def __init__(self, port, writer, parent, debug=None):
       self.port = port
       self.writer = writer
-      self.parent = parent  # Serlink object (i.e. Session Layer object)
+      self.parent = parent  # Transport object (i.e. Transport Layer object)
       self.quitFlag = False
       self.rxFrame = Transport.Frame()
       self.debug = debug
@@ -543,6 +562,10 @@ class Transport:
             # ack send
             ackFrameStr = ackFrame.toString()
             self.port.writeLine(ackFrameStr)
+
+            # pass received frame to parent object (transport layer object)
+            self.print('p1')
+            self.parent.handleReceive(self.rxFrame)
 
           elif(self.rxFrame.type == Transport.Frame.TYPE_ACK):
             # An ack frame has been received - so pass it to the writer
@@ -644,6 +667,7 @@ if __name__ == '__main__':
   ser = serLink.transport
 
   ledSocket = serLink.acquireSocket("LED01", "LED01Sock", initialRollCode=361)
+  buttonSocket = serLink.acquireSocket("BUT01", "BUT001Sock", initialRollCode=127)
 
   print("Enter a command:")
   
