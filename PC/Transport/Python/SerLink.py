@@ -134,6 +134,7 @@ class SerLink:
 
         self.print('before send frame: %s' % (frame.toString()))
 
+        # wait for frame to be sent
         ret = self.transport.sendFrameWait(frame)
 
         self.print('after send frame, status: %s   ackData: %s' % (ret.txStatus, ret.ackData))
@@ -163,7 +164,7 @@ class Transport:
     self.port = Transport.Port(port, baudrate)
     self.parent = parent
     self.writer = Transport.Writer(self.port, debug=self.debug, ackWaitTime=1)
-    self.reader = Transport.Reader(self.port, writer=self.writer, debug=self.debug)
+    self.reader = Transport.Reader(self.port, writer=self.writer, parent=self, debug=self.debug)
 
   def print(self, s):
     if(self.debugOn):
@@ -191,6 +192,9 @@ class Transport:
   def sendFrameWait(self, frame):
     ret = self.writer.sendFrameWait(frame)
     return ret
+
+  def setRxFrame(self, rxFrame):
+    
   
   class Frame:
     TYPE_TRANSMISSION = 'T'
@@ -352,13 +356,9 @@ class Transport:
 
       msg = Transport.Writer.InputMessage(Transport.Writer.MSG_TYPE_TX_FRAME, data=frame)
 
-      self.outputMutex.acquire()
-      self.outputMessage.txStatus = Transport.Writer.STATUS_BUSY
-      self.outputMutex.release()
-
-      self.inputQueue.put(msg)
-
       waitIteration = 0.005
+
+      # wait for writer to become idle (i.e. wait for the previous frame to be sent)
       while(True):
         self.outputMutex.acquire()
         txStatus = self.outputMessage.txStatus
@@ -369,9 +369,30 @@ class Transport:
         else:
           break
 
+      self.print('Writer.sendFrameWait idle')                
+
+      # writer is idle, now set its status to busy - for this frame
+      self.outputMutex.acquire()
+      self.outputMessage.txStatus = Transport.Writer.STATUS_BUSY
+      self.outputMutex.release()
+
+      self.inputQueue.put(msg)
+
+      # wait for this frame to be sent
+      while(True):
+        self.outputMutex.acquire()
+        txStatus = self.outputMessage.txStatus
+        outputMessage = self.outputMessage
+        self.outputMutex.release()
+
+        if(txStatus == Transport.Writer.STATUS_BUSY):
+          time.sleep(waitIteration)
+        else:
+          break
+
       self.print('Writer.sendFrameWait end: %s' % str(self.outputMessage.txStatus))
 
-      return self.outputMessage
+      return outputMessage
 
     def run(self):
       if(self.debug != None):
@@ -482,9 +503,10 @@ class Transport:
           self.inputQueue.task_done()
     
   class Reader:
-    def __init__(self, port, writer, debug=None):
+    def __init__(self, port, writer, parent, debug=None):
       self.port = port
       self.writer = writer
+      self.parent = parent  # Serlink object (i.e. Session Layer object)
       self.quitFlag = False
       self.rxFrame = Transport.Frame()
       self.debug = debug
@@ -515,7 +537,7 @@ class Transport:
           self.print(self.rxFrame.sprint())
 
           if(self.rxFrame.type == Transport.Frame.TYPE_TRANSMISSION):
-            # send ack
+            # create ack frame
             ackFrame = Transport.Frame(self.rxFrame.protocol, Transport.Frame.TYPE_ACK, self.rxFrame.rollCode, Transport.Frame.ACK_OK)
 
             # ack send
