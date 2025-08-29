@@ -9,17 +9,22 @@ class Socket:
       self.txStatus = txStatus
       self.ackData = ackData
 
-  def __init__(self, parent, protocol, id='', initialRollCode=0, onReceive=None, debugOn=False):
+  def __init__(self, parent, protocol, id='', initialRollCode=0, onReceive=None, debug=None,debugOn=False):
     self.parent = parent
     self.protocol = protocol
     self.rollCode = initialRollCode
     self.id = id
     self.onReceive = onReceive # on receive of a frame callback
+    self.debug = debug
     self.debugOn = debugOn
-    self.sendResponseEvent = threading.Event(time=2)
+    self.sendResponseEvent = threading.Event()
     self.txStatus = None
     self.sendAckData = None # ack data that can be returned after a send
     self.rxQueue = queue.Queue(maxsize=10) # receive queue
+
+  def print(self, s):
+    if(self.debugOn):
+      self.debug.printer.print(s)
 
   def sendDataWait(self, data, ack=True):
     if ack:
@@ -33,7 +38,7 @@ class Socket:
     self.parent.sendFrame(txFrame, self.sendDone)
 
     # wait for transport layer to send frame, and for ack to be returned if ack = True
-    self.sendResponseEvent.wait()
+    self.sendResponseEvent.wait(timeout=2)
 
     # if ack:
     #   if self.sendAckFrame == None:
@@ -48,7 +53,13 @@ class Socket:
 
     self.sendResponseEvent.clear()
 
+    # increment roll code
+    self.rollCode = self.rollCode + 1    
+    if(self.rollCode > Transport.Frame.maxRollCode()):
+      self.rollCode = 0
+
     result = Socket.SendResultMessage(self.txStatus, self.sendAckData)
+    self.print('Socket [%s] send result: %s   ackData: %s' % (self.id, self.txStatus, self.sendAckData))
     return result               
 
   # Callback used by session layer to signal that a send operation has completed.
@@ -76,64 +87,87 @@ class SerLink:
       self.onDone = onDone
 
   def __init__(self, port, baudrate, debugOn=False):
-    self.transport = Transport(port, baudrate, self)
+    self.debug = Debug()
+    self.transport = Transport(port, baudrate, self, self.debug)
     self.debugOn = debugOn
     self.sockets = dict()  # dictionary of sockets
     self.runThread = threading.Thread(target=self.run)
     self.sendQueue = queue.Queue(maxsize=10) # send queue
 
-  def start(self):
+  def print(self, s):
+    if(self.debugOn):
+      self.debug.printer.print(s)
+
+  def start(self):    
     self.runThread.start()
     self.transport.start()
 
   def quit(self):
+    #self.print('quit')
     quitMsg = SerLink.SendMessage(SerLink.SendMessage.MSG_TYPE_QUIT)
+    self.sendQueue.put(quitMsg)
+    self.runThread.join()
     self.transport.close()
+    
 
-  def acquireSocket(self, protocol, id='', initialRollCode=0, onReceive=None):
-    socket = Socket(protocol, id, initialRollCode, onReceive)
+  def acquireSocket(self, protocol, id='', initialRollCode=0, onReceive=None, debug=None, debugOn=False):
+    socket = Socket(self, protocol, id, initialRollCode, onReceive, self.debug, self.debugOn)
     self.sockets[protocol] = socket
     return socket
   
   def sendFrame(self, frame, onDone):
+    # put frame to be sent onto the send queue
     sendMsg = SerLink.SendMessage(SerLink.SendMessage.MSG_TYPE_TX_FRAME, frame, onDone)
     self.sendQueue.put(sendMsg)
 
-
   def run(self):
-
+    self.debug.threadNameResolver.addCurrentThread('SER  ')
+    self.print('run start')
     while(True):
       msg = self.sendQueue.get()
-      if msg.type == SerLink.SendMessage.MSG_TYPE_QUIT:
+      if msg.msgType == SerLink.SendMessage.MSG_TYPE_QUIT:
+        self.print('quit msg')
         break
 
-      elif msg.type == SerLink.SendMessage.MSG_TYPE_TX_FRAME:
+      elif msg.msgType == SerLink.SendMessage.MSG_TYPE_TX_FRAME:
         frame = msg.frame
+
+        self.print('before send frame: %s' % (frame.toString()))
+
         ret = self.transport.sendFrameWait(frame)
+
+        self.print('after send frame, status: %s   ackData: %s' % (ret.txStatus, ret.ackData))
 
         # call send done callback (Socket.sendDone)
         msg.onDone(ret.txStatus, ret.ackData)
 
+    self.print('end run()')
+
 
   # Used by transport layer to signal that a send operation has completed
   # set the ack frame if one is returned
-  def sendDone(self, protocol, ackFrame=None):
-    if protocol in self.sockets.keys():
-      # the protocol has been found in self.sockets
-      socket = self.sockets[protocol]
-      socket.sendDone(ackFrame)
-    else:
-      # the protocol has NOT been found in self.sockets - error
-      pass
+  # def sendDone(self, protocol, ackFrame=None):
+  #   if protocol in self.sockets.keys():
+  #     # the protocol has been found in self.sockets
+  #     socket = self.sockets[protocol]
+  #     socket.sendDone(ackFrame)
+  #   else:
+  #     # the protocol has NOT been found in self.sockets - error
+  #     pass
 
 
 class Transport:
-  def __init__(self, port, baudrate, parent):
-    self.debug = Transport.Debug()
+  def __init__(self, port, baudrate, parent, debug, debugOn=False):
+    self.debug = debug #Transport.Debug()
+    self.debugOn = debugOn
     self.port = Transport.Port(port, baudrate)
     self.parent = parent
     self.writer = Transport.Writer(self.port, debug=self.debug, ackWaitTime=1)
     self.reader = Transport.Reader(self.port, writer=self.writer, debug=self.debug)
+
+  def print(self, s):
+    if(self.debugOn):
+      self.debug.printer.print(s)
 
   def start(self):
     self.port.init()
@@ -143,11 +177,13 @@ class Transport:
     self.readerThread.start()
 
   def close(self):
+    self.print('Transport.close() start')
     self.writer.quit()
     self.writerThread.join()
     self.reader.quit()
     self.readerThread.join()
     self.port.close()
+    self.print('Transport.close() end')
 
   def readline(self):
     return self.reader.readline()
@@ -167,6 +203,13 @@ class Transport:
     LEN_HEADER = LEN_PROTOCOL + LEN_TYPE + LEN_ROLLCODE + LEN_DATALEN
     LEN_ACK = LEN_PROTOCOL + LEN_TYPE + LEN_ROLLCODE
     ACK_OK = 900
+
+    @staticmethod
+    def maxRollCode():
+      value = 1
+      for i in range(0, Transport.Frame.LEN_ROLLCODE):
+        value = value * 10
+      return value - 1
 
     def __init__(self, protocol=None, type=None, rollCode=None, dataLen=None, data=None):
       self.protocol = protocol
@@ -490,56 +533,6 @@ class Transport:
     def quit(self):
       self.quitFlag = True
 
-  class Debug:
-    def __init__(self):
-      self.threadNameResolver = Transport.Debug.ThreadNameResolver()
-      self.timeStamper = Transport.Debug.TimeStamper()
-      self.printer = Transport.Debug.Printer(self.threadNameResolver, self.timeStamper)
-
-    class ThreadNameResolver:
-      def __init__(self):
-        self.dict = dict()
-
-      def addThreadName(self, threadId, threadName):
-        self.dict[threadId] = threadName
-
-      def addCurrentThread(self, threadName):
-        threadId = threading.current_thread().ident
-        self.dict[threadId] = threadName
-
-      def getCurrentThreadName(self):
-        if(threading.current_thread().ident in self.dict):
-          return self.dict[threading.current_thread().ident]
-        else:
-          return '-----'
-        
-    class TimeStamper(object):
-      def __init__(self):
-        self.start = datetime.datetime.now()
-      
-      """
-      Returns string containing elapsed time: seconds:milliseconds
-      e.g.: 015.745
-      """
-      def getElapsed(self):
-        elapsed = datetime.datetime.now() - self.start
-        t1 = int(elapsed.microseconds / 1000)
-        seconds = str(elapsed.seconds)
-        milliseconds = str(t1).zfill(3)
-        seconds = str(elapsed.seconds).zfill(3)
-
-        s = '{seconds:s}.{milliseconds:s}'.format(seconds = seconds, milliseconds = milliseconds)
-        #s = '{seconds:2d}.{milliseconds:3d}'.format(seconds = 2, milliseconds = 32)
-        return s
-  
-    class Printer:
-      def __init__(self, threadNameResolver, timeStamper):
-        self.threadNameResolver = threadNameResolver
-        self.timeStamper = timeStamper
-
-      def print(self, s):
-        print('[%s:%s] %s' % (self.threadNameResolver.getCurrentThreadName(), self.timeStamper.getElapsed(), s))
-
   class Utils:
     def padIntLeft(n, maxLen, padChar = '0'):
       s = str(n)
@@ -548,18 +541,87 @@ class Transport:
       for i in range(0, maxLen - len(s)):
         s = padChar + s
       return s
+  
+  # end of Transport class
+  #--------------------------------------------------------------------      
+
+class Debug:
+  def __init__(self):
+    self.threadNameResolver = Debug.ThreadNameResolver()
+    self.timeStamper = Debug.TimeStamper()
+    self.printer = Debug.Printer(self.threadNameResolver, self.timeStamper)
+
+  class ThreadNameResolver:
+    def __init__(self):
+      self.dict = dict()
+
+    def addThreadName(self, threadId, threadName):
+      self.dict[threadId] = threadName
+
+    def addCurrentThread(self, threadName):
+      threadId = threading.current_thread().ident
+      self.dict[threadId] = threadName
+
+    def getCurrentThreadName(self):
+      if(threading.current_thread().ident in self.dict):
+        return self.dict[threading.current_thread().ident]
+      else:
+        return '-----'
+      
+  class TimeStamper(object):
+    def __init__(self):
+      self.start = datetime.datetime.now()
+    
+    """
+    Returns string containing elapsed time: seconds:milliseconds
+    e.g.: 015.745
+    """
+    def getElapsed(self):
+      elapsed = datetime.datetime.now() - self.start
+      t1 = int(elapsed.microseconds / 1000)
+      seconds = str(elapsed.seconds)
+      milliseconds = str(t1).zfill(3)
+      seconds = str(elapsed.seconds).zfill(3)
+
+      s = '{seconds:s}.{milliseconds:s}'.format(seconds = seconds, milliseconds = milliseconds)
+      #s = '{seconds:2d}.{milliseconds:3d}'.format(seconds = 2, milliseconds = 32)
+      return s
+
+  class Printer:
+    def __init__(self, threadNameResolver, timeStamper):
+      self.threadNameResolver = threadNameResolver
+      self.timeStamper = timeStamper
+
+    def print(self, s):
+      print('[%s:%s] %s' % (self.threadNameResolver.getCurrentThreadName(), self.timeStamper.getElapsed(), s))
+
+
 
 #---------------------------------------------------
 # ECHO1T076004abcd LED01T805003abc DBG01T156003ASD DBG01T156003aSD
 
 # Run:
-# python Transport.py
+# python SerLink.py
+# python3 SerLink.py  (Debian machine)
 if __name__ == '__main__':
   print('start 1')
 
-  ser = Transport('COM3', 19200)
-  ser.debug.threadNameResolver.addCurrentThread('MAIN ')
-  ret = ser.start()
+  # debug = Debug()
+  # #ser = Transport('COM3', 19200, None) 
+  # ser = Transport('/dev/ttyACM0', 19200, None, debug)
+  # ser.debug.threadNameResolver.addCurrentThread('MAIN ')
+  # ret = ser.start()
+
+  # maxrc = Transport.Frame.maxRollCode()
+  # print('maxrc: %d' % maxrc)
+  # exit()
+
+  serLink = SerLink('/dev/ttyACM0', 19200, debugOn=True)
+  serLink.debug.threadNameResolver.addCurrentThread('MAIN ')
+  serLink.start()
+  ser = serLink.transport
+
+  ledSocket = serLink.acquireSocket("LED01", "LED01Sock", initialRollCode=361)
 
   print("Enter a command:")
   
@@ -567,6 +629,7 @@ if __name__ == '__main__':
     inStr = input()
     print(inStr)
     if inStr == 'q':
+      #
       break
     # line = ser.readline()
     # print('rx> ' + line)
@@ -597,16 +660,20 @@ if __name__ == '__main__':
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     elif inStr == 'tledon':
-      txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 45, 1, "1") 
-      ret = ser.sendFrameWait(txFrame)
+      # txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 45, 1, "1") 
+      # ret = ser.sendFrameWait(txFrame)
+      ret = ledSocket.sendDataWait("1")
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
     elif inStr == 'tledoff':
-      txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 45, 1, "0") 
-      ret = ser.sendFrameWait(txFrame)
+      # txFrame = Transport.Frame("LED01", Transport.Frame.TYPE_TRANSMISSION, 45, 1, "0") 
+      # ret = ser.sendFrameWait(txFrame)
+      ret = ledSocket.sendDataWait("0")
       print('txStatus: ' + str(ret.txStatus) + '    ack data: ' + str(ret.ackData))
 
-  ser.close()
+  print('main quit')
+  #ser.close()
+  serLink.quit()
 
   # ser = serial.Serial('COM3', 19200, timeout=None)
   # ser.close()
