@@ -32,7 +32,22 @@ class App:
             # quit
             break
           
-        print('CLI.run() end')
+        print('CLI.run() end') 
+
+  class Module:
+    class Led:
+      def __init__(self, socket, idChar=''):
+        self.socket = socket
+        self.idChar = idChar
+
+      def on(self):
+        data = self.idChar + '1'
+        ret = self.socket.sendDataWait(data)
+
+      def off(self):
+        data = self.idChar + '0'
+        ret = self.socket.sendDataWait(data)
+
 
 class Socket:
   class SendResultMessage:
@@ -82,7 +97,18 @@ class Socket:
 
     result = Socket.SendResultMessage(self.txStatus, self.sendAckData)
     self.print('Socket [%s] send result: %s   ackData: %s' % (self.id, self.txStatus, self.sendAckData))
-    return result               
+    return result       
+
+  def getRxData(self):
+    rxFrame = None
+    try:
+      rxFrame = self.rxQueue.get(block=False, timeout=0.1)
+      #self.print('Socket [%s] getRxData: %s' % (self.id, rxFrame.toString()))
+      return rxFrame.data
+    except queue.Empty as qe:
+      # queue is empty
+      #self.print('Socket [%s] queue empty: %s' % (self.id))
+      return None
   
   def print(self, s):
     if(self.debugOn):
@@ -100,11 +126,13 @@ class Socket:
 
     self.print('Socket [%s] rx frame: %s' % (self.id, rxFrame.toString()))
     if self.onReceive == None:      
+      self.print('put on queue')
       # put received frame onto own rx queue
       self.rxQueue.put(rxFrame)
     else:
       self.onReceive(rxFrame)
 
+#---------------------------------------------------
 # Session layer class
 class SerLink:
   class SendMessage:
@@ -199,7 +227,7 @@ class SerLink:
   #     # the protocol has NOT been found in self.sockets - error
   #     pass
 
-
+#---------------------------------------------------
 class Transport:
   def __init__(self, port, baudrate, parent, debug, debugOn=False):
     self.debug = debug #Transport.Debug()
