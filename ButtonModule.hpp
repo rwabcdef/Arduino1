@@ -74,7 +74,8 @@ class ButtonModule : public StateMachine
       NoEvent = 0,
       Edge = 1,
       StableActive,
-      StableInactive
+      StableInactive,
+      StableActiveLong
     };
 
     internalEventTypes eventCheck();

@@ -90,6 +90,19 @@ ButtonModule::internalEventTypes ButtonModule::eventCheck()
         this->inActiveCount = 0;
         this->stable = false;
       }
+
+    // long press check
+    else if(currentPinState != this->eventPinState)
+    {
+      this->inActiveCount = 0;
+      this->activeCount++;
+      if((this->longPressThreshold > 0) && (this->activeCount >= this->longPressThreshold))
+      {
+        // long press event
+        this->activeCount = 0;
+        ret = StableActiveLong;
+      }
+    }
   }
   else
   {
@@ -176,6 +189,20 @@ uint8_t ButtonModule::pressed()
     this->eventPinState = this->pressedPinState;
     return RELEASED;
   }
+  else if(event == StableActiveLong)
+  {
+    // long press
+    this->eventType = LongPressed;    // set event code (flag interface)
+
+    if(this->buttonEvent != nullptr)
+    {
+      // set event object's action code (event object interface)
+      this->buttonEvent->setAction(BUTTONEVENT__LONGPRESS);
+    }
+    
+    return PRESSED;
+  }
+  return PRESSED;
 }
 //------------------- --------------------------------
 
