@@ -118,7 +118,7 @@ char socketTxData[SOCKET_RX_DATA_LEN] = {0};
 uint16_t socketRxDataLen;
 //-----------------------
 
-HardMod::Std::ButtonEvent button0Event;
+HardMod::Std::ButtonEvent button0Event, button0EventExt;
 
 // Button: Pin B3 (Pin 11)
 HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 3, false, &button0Event, true, 150);
@@ -196,11 +196,19 @@ void loop() {
   //   sprintf(socketTxData, "%s\0", "RL");
   //   buttonSocket.sendData(socketTxData, 2, true);
   // }
-  if(button0.getEvent() == true)
+  if(button0.getEvent(&button0EventExt) == true)
   {
-    //char action = button0Event.getAction();
+    char action = button0EventExt.getAction();
+    if(action == BUTTONEVENT__RELEASED)
+    {
+      //gpio_setPinHigh(GPIO_REG__PORTB, 5);
+    }
+    button0Event.clear();
 
-    buttonSocket.sendEvent(button0Event, socketTxData, true);
+    bool ok = buttonSocket.sendEvent(button0EventExt, socketTxData, false);
+    if(!ok){
+      gpio_setPinHigh(GPIO_REG__PORTB, 5);
+    }
     
     // if(action == BUTTONEVENT__PRESSED)
     // {
@@ -208,7 +216,7 @@ void loop() {
     //   // buttonSocket.sendData(socketTxData, len, true);     
     //   buttonSocket.sendEvent(button0Event, socketTxData, true);
     // }
-    button0Event.clear();
+    //button0Event.clear();
   }
   //sei();
 

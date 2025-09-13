@@ -35,6 +35,11 @@ extern uint8_t DDRD;
 extern uint8_t PORTD;
 extern uint8_t PIND;
 
+extern uint8_t ADMUX;
+extern uint8_t ADCSRA;
+extern uint8_t ADEN;
+extern uint8_t ADSC;
+
 #define PORTB0 0
 #define PORTB1 1
 #define PORTB2 2
@@ -73,6 +78,8 @@ extern "C" {
 
 void cbi(uint8_t reg, uint8_t bit);
 void sbi(uint8_t reg, uint8_t bit);
+
+void bitSet(uint8_t reg, uint8_t bit);
 
 void enterCritical();
 void exitCritical();

@@ -21,6 +21,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
+#include "wiring_private.h"
 
 #endif
 

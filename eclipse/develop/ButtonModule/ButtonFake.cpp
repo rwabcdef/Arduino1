@@ -1,8 +1,15 @@
-#include "ButtonModule.hpp"
+/*
+ * ButtonFake.cpp
+ *
+ *  Created on: 12 Sept 2025
+ *      Author: rw123
+ */
+
+#include "ButtonFake.hpp"
 #include "swTimer.h"
 #include "hw_gpio.h"
 
-namespace HardMod::Std
+namespace HardMod::Fake
 {
 
 #define RELEASED 1
@@ -13,10 +20,8 @@ namespace HardMod::Std
 
 #define RUN_PERIOD_mS 20
 
-ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool ,
-  ButtonEvent *buttonEvent, bool releaseActive, uint8_t longPressThreshold)
+ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState)
 : port(port), pin(pin), pressedPinState(pressedPinState)
-, buttonEvent(buttonEvent), longPressThreshold(longPressThreshold), releaseActive(releaseActive)
 {
   this->currentState = RELEASED;
   this->eventPinState = this->pressedPinState;
@@ -47,32 +52,8 @@ ButtonModule::eventTypes ButtonModule::getEvent(uint8_t* pressDuration)
   {
     *pressDuration = this->pressedCount;
   }
-  this->eventType = None;  // clear event (flag inetrface)
-  if(this->buttonEvent != nullptr)
-  {
-    // clear event object (event object interface)
-    this->buttonEvent->clear();
-  }
+  this->eventType = None;  // clear event
   return ret;
-}
-
-bool ButtonModule::getEvent(ButtonEvent* event)
-{
-  this->eventType = None;  // clear event (flag inetrface)
-
-  if(this->buttonEvent->getAction() == EVENT__NONE)
-  {
-    // no action has occurred
-    return false;
-  }
-  else
-  {
-    if(event != nullptr)
-    {
-      event = this->buttonEvent;
-    }
-    return true;
-  }
 }
 //---------------------------------------------------
 ButtonModule::internalEventTypes ButtonModule::eventCheck()
@@ -90,19 +71,6 @@ ButtonModule::internalEventTypes ButtonModule::eventCheck()
         this->inActiveCount = 0;
         this->stable = false;
       }
-
-    // long press check
-    else if(currentPinState != this->eventPinState)
-    {
-      this->inActiveCount = 0;
-      this->activeCount++;
-      if((this->longPressThreshold > 0) && (this->activeCount >= this->longPressThreshold))
-      {
-        // long press event
-        this->activeCount = 0;
-        ret = StableActiveLong;
-      }
-    }
   }
   else
   {
@@ -141,12 +109,7 @@ uint8_t ButtonModule::released()
   ButtonModule::internalEventTypes event = this->eventCheck();
   if(event == Edge)
   {
-    this->eventType = Pressed;    // set event code (flag interface)
-    if(this->buttonEvent != nullptr)
-    {
-      // set event object's action code (event object interface)
-      this->buttonEvent->setAction(BUTTONEVENT__PRESSED); 
-    }
+    this->eventType = Pressed;
     this->pressedCount = 0;
     return PRESSED;
   }
@@ -176,35 +139,13 @@ uint8_t ButtonModule::pressed()
   }
   else if(event == Edge)
   {
-    // Button released
     this->eventType = Released;
-    if((this->buttonEvent != nullptr) && (this->releaseActive == true))
-    {
-      // set event object's action code (event object interface)
-      this->buttonEvent->setAction(BUTTONEVENT__RELEASED);
-      
-      // Set the press duration
-      this->buttonEvent->setPressDuration(this->pressedCount);
-    }
     this->eventPinState = this->pressedPinState;
     return RELEASED;
   }
-  else if(event == StableActiveLong)
-  {
-    // long press
-    this->eventType = LongPressed;    // set event code (flag interface)
-
-    if(this->buttonEvent != nullptr)
-    {
-      // set event object's action code (event object interface)
-      this->buttonEvent->setAction(BUTTONEVENT__LONGPRESS);
-    }
-    
-    return PRESSED;
-  }
-  return PRESSED;
 }
 //------------------- --------------------------------
 
 
 } // end namespace EventModule::Std
+

@@ -69,7 +69,7 @@ bool ButtonModule::getEvent(ButtonEvent* event)
   {
     if(event != nullptr)
     {
-      event = this->buttonEvent;
+      this->buttonEvent->copy(event);
     }
     return true;
   }
@@ -92,7 +92,8 @@ ButtonModule::internalEventTypes ButtonModule::eventCheck()
       }
 
     // long press check
-    else if(currentPinState != this->eventPinState)
+    else if((currentPinState != this->eventPinState) && 
+    (this->eventPinState != this->pressedPinState))
     {
       this->inActiveCount = 0;
       this->activeCount++;
@@ -148,6 +149,7 @@ uint8_t ButtonModule::released()
       this->buttonEvent->setAction(BUTTONEVENT__PRESSED); 
     }
     this->pressedCount = 0;
+
     return PRESSED;
   }
   return RELEASED;

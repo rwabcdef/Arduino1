@@ -39,4 +39,11 @@ void ButtonEvent::clear()
   this->pressDuration = 0;
 }
 
+void ButtonEvent::copy(Event* copyEvent)
+{
+  ButtonEvent* copy = (ButtonEvent*) copyEvent;
+  copy->setAction(this->action);
+  copy->setPressDuration(this->pressDuration);
+}
+
 } // end namespace HardMod

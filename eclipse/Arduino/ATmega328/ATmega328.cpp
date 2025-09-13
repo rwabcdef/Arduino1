@@ -35,6 +35,11 @@ uint8_t DDRD = 0;
 uint8_t PORTD = 0;
 uint8_t PIND = 0;
 
+uint8_t ADMUX;
+uint8_t ADCSRA;
+uint8_t ADEN;
+uint8_t ADSC;
+
 static setClearIntBitCallBack setUDRIE0CallBack = nullptr;
 static setClearIntBitCallBack clrUDRIE0CallBack = nullptr;
 
@@ -102,4 +107,12 @@ void setClr_UDRIE0_CallBack(setClearIntBitCallBack cb)
 	clrUDRIE0CallBack = cb;
 }
 
+void bitSet(uint8_t reg, uint8_t bit)
+{
+  // dummy function
+}
 
+bool bit_is_clear(uint8_t reg, uint8_t bit)
+{
+  return !(reg & (1 << bit));
+}

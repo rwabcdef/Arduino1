@@ -25,6 +25,8 @@ class ButtonEvent: public Event
     uint8_t serialise(char* str);
 
     void clear();
+
+    void copy(Event* copyEvent);
     //--------------------
 };
 

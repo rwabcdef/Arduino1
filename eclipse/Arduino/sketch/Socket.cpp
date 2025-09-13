@@ -104,6 +104,15 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
   return true;
 }
 
+bool SerLink::Socket::sendEvent(HardMod::Event &event, char* buffer, bool ack)
+{
+  // serialise the event
+  uint8_t len = event.serialise(buffer);
+
+  // send the data
+  this->sendData(buffer, len, ack);
+}
+
 uint8_t SerLink::Socket::getAndClearSendStatus()
 {
   return this->writer->getStatusProtocol(this->protocol);

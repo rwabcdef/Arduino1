@@ -1,7 +1,12 @@
+/*
+ * ButtonFake.hpp
+ *
+ *  Created on: 12 Sept 2025
+ *      Author: rw123
+ */
 
-
-#ifndef BUTTONMODULE_HPP_
-#define BUTTONMODULE_HPP_
+#ifndef BUTTONFAKE_HPP_
+#define BUTTONFAKE_HPP_
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -11,7 +16,7 @@
 #define BUTTONMODULE_THRESHOLD 4
 #define BUTTONMODULE_PERIOD_mS 50
 
-namespace HardMod::Std
+namespace HardMod::Fake
 {
 
 class ButtonModule : public StateMachine
@@ -27,7 +32,7 @@ class ButtonModule : public StateMachine
 
     ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState,
       ButtonEvent *buttonEvent = nullptr, bool releaseActive = false, uint8_t longPressThreshold = 0);
-    
+
     void run();
 
     //---------------------------------------------------
@@ -47,7 +52,7 @@ class ButtonModule : public StateMachine
     bool getEvent(ButtonEvent* event = nullptr);
     //---------------------------------------------------
 
-  protected:    
+  protected:
     uint8_t port;
     uint8_t pin;
     ButtonEvent *buttonEvent;
@@ -68,7 +73,7 @@ class ButtonModule : public StateMachine
 
     // state methods
     uint8_t released();
-    uint8_t pressed();    
+    uint8_t pressed();
 
     enum internalEventTypes{
       NoEvent = 0,
@@ -83,4 +88,4 @@ class ButtonModule : public StateMachine
 
 } // end namespace HardMod::Std
 
-#endif
+#endif /* BUTTONFAKE_HPP_ */

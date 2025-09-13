@@ -10,6 +10,18 @@
 #include "Global.hpp"
 #include "ButtonModuleDevelop.hpp"
 
+/*
+ ******* IMPORTANT
+
+ To sync files from the arduino IDE project (i.e. the actual embedded code)
+ and the eclipse source code, run:
+ python .\eclipse_sync.py
+
+ from:
+C:\Users\rw123\OneDrive\Documents\Rob\software\Embedded\Arduino\repo\Arduino1\Arduino1
+
+ */
+
 //DebugPrint* debugPrint;
 
 int main()

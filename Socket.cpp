@@ -110,7 +110,7 @@ bool SerLink::Socket::sendEvent(HardMod::Event &event, char* buffer, bool ack)
   uint8_t len = event.serialise(buffer);
 
   // send the data
-  this->sendData(buffer, len, ack);
+  return this->sendData(buffer, len, ack);
 }
 
 uint8_t SerLink::Socket::getAndClearSendStatus()
