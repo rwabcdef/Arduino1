@@ -42,6 +42,7 @@ void ButtonEvent::clear()
 void ButtonEvent::copy(Event* copyEvent)
 {
   ButtonEvent* copy = (ButtonEvent*) copyEvent;
+  copy->setAck(this->ack);
   copy->setAction(this->action);
   copy->setPressDuration(this->pressDuration);
 }

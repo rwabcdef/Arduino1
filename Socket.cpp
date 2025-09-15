@@ -9,11 +9,13 @@
 #include "swTimer.h"
 #include "string.h"
 
-SerLink::Socket::Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame
-, readHandler instantReadHandler, uint16_t startRollCode): writer(writer), reader(reader)
+SerLink::Socket::Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame, HardMod::Event* event
+,HardMod::EventQueue* sendEventQueue,  readHandler instantReadHandler, uint16_t startRollCode):
+writer(writer), reader(reader), event(event), sendEventQueue(sendEventQueue)
 {
   this->active = true;
-  // this->txFlag = false;
+  this->txDataFlag = false;
+  //this->txDataAck = false;
   // this->rxFlag = false;
   //this->txBusy = false;
   //this->txStatus = TX_STATUS_IDLE;
@@ -77,11 +79,14 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
     return false;
   }
 
-  if(this->writer->getStatus() == Writer::STATUS_BUSY)
-  {
-    // Writer is currently busy - so do nothing
-    return false;
-  }
+  this->txDataFlag = true;
+  //this->txDataAck = ack;
+
+  // if(this->writer->getStatus() == Writer::STATUS_BUSY)
+  // {
+  //   // Writer is currently busy - so do nothing
+  //   return false;
+  // }
 
   this->txFrame->setProtocol(this->protocol);
   if(ack)
@@ -97,7 +102,7 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
   this->txFrame->dataLen = dataLen;
   strncpy(this->txFrame->buffer, data, dataLen);
 
-  this->writer->sendFrame(this->txFrame);
+  // this->writer->sendFrame(this->txFrame);
 
   //this->txStatus = TX_STATUS_IDLE;
 
@@ -106,11 +111,27 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
 
 bool SerLink::Socket::sendEvent(HardMod::Event &event, char* buffer, bool ack)
 {
-  // serialise the event
-  uint8_t len = event.serialise(buffer);
+  if(this->sendEventQueue == nullptr){
+    return false;
+  }
 
-  // send the data
-  return this->sendData(buffer, len, ack);
+  if(this->sendEventQueue->isFull())
+  {
+    return false;
+  }
+
+  event.setAck(ack);
+
+  this->sendEventQueue->put(&event);
+  return true;
+
+
+
+  // serialise the event
+  // uint8_t len = event.serialise(buffer);
+
+  // // send the data
+  // return this->sendData(buffer, len, ack);
 }
 
 uint8_t SerLink::Socket::getAndClearSendStatus()
@@ -127,6 +148,55 @@ uint8_t SerLink::Socket::getAndClearSendStatus()
   //   this->txStatus = TX_STATUS_IDLE; // clear status
   //   return status;
   // }
+}
+
+void SerLink::Socket::run() // char* buffer
+{
+  if(this->writer->getStatus() == Writer::STATUS_BUSY)
+  {
+    // writer is busy - so do nothinh
+    return;
+  }
+
+  if(this->txDataFlag)
+  {
+    // send data (not event), this->txFrame is already initialised
+
+    this->txDataFlag = false;
+
+    this->writer->sendFrame(this->txFrame);
+    return true;
+  }
+
+  if(this->sendEventQueue->isEmpty())
+  {
+    // There are no events to send
+    return;
+  }
+  
+  // get the first event to be sent from the sendEventQueue
+  this->sendEventQueue->get(this->event);
+  
+  this->txFrame->setProtocol(this->protocol);
+  if(this->event->getAck())
+  {
+    this->txFrame->type = Frame::TYPE_TRANSMISSION;
+  }
+  else
+  {
+    this->txFrame->type = Frame::TYPE_UNIDIRECTION;
+  }
+  this->txFrame->rollCode = this->txRollCode;
+  Frame::incRollCode(&this->txRollCode);
+
+  this->txFrame->dataLen = this->event->serialise(this->txFrame->buffer);
+  //strncpy(this->txFrame->buffer, data, dataLen);
+
+  this->writer->sendFrame(this->txFrame);
+
+  //this->txStatus = TX_STATUS_IDLE;
+
+  return true;
 }
 
 /*

@@ -9,6 +9,7 @@
 #define HARDMOD_EVENT_HPP_
  
 #include <stdint.h>
+#include <stdbool.h>
 
 #define EVENT__NONE '-' // code for: no event
  
@@ -18,12 +19,19 @@ namespace HardMod
 class Event{
 
   protected:
+    bool ack;  // used when event is sent over SerLink
     char action;
     void clr();
  
   public:
  
     Event();
+
+    // set the Event's ack bool
+    void setAck(bool ack);
+
+    // get the Event's ack bool
+    bool getAck();
 
     // Sets the Event's action
     void setAction(char action);

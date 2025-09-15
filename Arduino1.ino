@@ -19,6 +19,7 @@ Serial monitor Ack frame: TST16A452
 #include "Socket.hpp"
 #include "ButtonModule.hpp"
 #include "HwModule.hpp"
+#include "HardMod_EventQueue.hpp"
 
 /*
 Hardware Config
@@ -96,7 +97,7 @@ char debugSocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame debugSocketRxFrame(debugSocketRxFrameBuffer);
 SerLink::Frame debugSocketTxFrame(debugSocketTxFrameBuffer);
 
-SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, &debugSockInstantHandler);
+SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, nullptr, nullptr, &debugSockInstantHandler);
 //-----------------------
 // button socket
 char buttonSocketRxFrameBuffer[UART_BUFF_LEN];
@@ -105,7 +106,17 @@ char buttonSocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame buttonSocketRxFrame(buttonSocketRxFrameBuffer);
 SerLink::Frame buttonSocketTxFrame(buttonSocketTxFrameBuffer);
 
-SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame);
+// ButtonEvents for EventQueue for buttonSocket
+HardMod::Std::ButtonEvent bt0Ev0, bt0Ev1, bt0Ev2;
+HardMod::Std::ButtonEvent* bt0Ev[3] = {&bt0Ev0, &bt0Ev1, &bt0Ev2};
+
+// EventQueue for buttonSocket
+HardMod::EventQueue bt0EvQueue(bt0Ev, 3);
+
+// General purpose ButtonEvent for buttonSocket
+HardMod::Std::ButtonEvent bt0Event;
+
+SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0Event, &bt0EvQueue);
 
 //-----------------------
 
@@ -205,7 +216,7 @@ void loop() {
     }
     button0Event.clear();
 
-    bool ok = buttonSocket.sendEvent(button0EventExt, socketTxData, false);
+    bool ok = buttonSocket.sendEvent(button0EventExt, socketTxData, true);
     if(!ok){
       gpio_setPinHigh(GPIO_REG__PORTB, 5);
     }
@@ -219,6 +230,7 @@ void loop() {
     //button0Event.clear();
   }
   //sei();
+  buttonSocket.run();
 
   /*
   cli();
@@ -258,8 +270,8 @@ void loop() {
   cli();
   if(swTimer_tickCheckTimeout(&startTick, 3000))
   {
-    //sprintf(txData, "%03d", count++);
-    //ledSocket.sendData(txData, 3, true);
+    // sprintf(txData, "%03d", count++);
+    // buttonSocket.sendData(txData, 3, true);
     //frameSent = true;
 
     //toggleBuiltInLed();
@@ -346,6 +358,8 @@ void loop() {
   //reader0.clearRxFlag();
   writer0.run();
   reader0.run();
+
+  
 
 } // end loop()
 

@@ -14,6 +14,7 @@
 #include "StateMachine.hpp"
 #include "Frame.hpp"
 #include "DebugUser.hpp"
+#include "HardMod_EventQueue.hpp"
 #include "HardMod_Event.hpp"
 
 namespace SerLink
@@ -25,7 +26,8 @@ private:
   Writer* writer;
   Reader* reader;
   bool active;
-  // bool txFlag;
+  bool txDataFlag;
+  //bool txDataAck;
   //bool txBusy;
   // bool rxFlag;
   // uint8_t txStatus;
@@ -34,13 +36,15 @@ private:
   Frame* txFrame;
   char protocol[Frame::LEN_PROTOCOL];
   uint16_t txRollCode;
+  HardMod::EventQueue* sendEventQueue;
+  HardMod::Event* event;
 
 public:
   const static uint8_t TX_STATUS_IDLE = 5;
   const static uint8_t TX_STATUS_BUSY = 6;
 
-  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame,
-  readHandler instantReadHandler = nullptr, uint16_t startRollCode = 0);
+  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame, HardMod::Event* event = nullptr,
+  HardMod::EventQueue* sendEventQueue = nullptr, readHandler instantReadHandler = nullptr, uint16_t startRollCode = 0);
 
   bool getActive(){ return this->active; };
   // void init(char* protocol, Frame *rxFrame, Frame* txFrame, readHandler instantReadHandler, uint16_t startRollCode = 0);
@@ -62,6 +66,7 @@ public:
   // Serialises the event and then sends the data.
   bool sendEvent(HardMod::Event &event, char* buffer, bool ack);
 
+  void run();
   //-------------------------------------------
   // Lower (i.e. transport) Interface
 

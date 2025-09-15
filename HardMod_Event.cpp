@@ -7,6 +7,17 @@ namespace HardMod
 Event::Event()
 {
   this->action = EVENT__NONE;
+  this->ack = false;
+}
+
+void Event::setAck(bool ack)
+{
+  this->ack = ack;
+}
+
+bool Event::getAck()
+{
+  return this->ack;
 }
 
 void Event::setAction(char action)
@@ -42,6 +53,7 @@ bool Event::deSerialise(char* str)
 
 void Event::copy(Event* copyEvent)
 {
+  this->ack = copyEvent->ack;
   this->action = copyEvent->action;
 }
 
