@@ -97,7 +97,7 @@ char debugSocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame debugSocketRxFrame(debugSocketRxFrameBuffer);
 SerLink::Frame debugSocketTxFrame(debugSocketTxFrameBuffer);
 
-SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, nullptr, &debugSockInstantHandler);
+SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, nullptr, nullptr, &debugSockInstantHandler);
 //-----------------------
 // button socket
 char buttonSocketRxFrameBuffer[UART_BUFF_LEN];
@@ -114,9 +114,9 @@ HardMod::Std::ButtonEvent* bt0Ev[3] = {&bt0Ev0, &bt0Ev1, &bt0Ev2};
 HardMod::EventQueue bt0EvQueue(bt0Ev, 3);
 
 // General purpose ButtonEvent for buttonSocket
-//HardMod::Std::ButtonEvent bt0Event;
+HardMod::Std::ButtonEvent bt0Event;
 
-SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0EvQueue);
+SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0Event, &bt0EvQueue);
 
 //-----------------------
 

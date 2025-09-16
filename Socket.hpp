@@ -44,7 +44,7 @@ public:
   const static uint8_t TX_STATUS_IDLE = 5;
   const static uint8_t TX_STATUS_BUSY = 6;
 
-  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame,
+  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame, HardMod::Event* event = nullptr,
   HardMod::EventQueue* sendEventQueue = nullptr, readHandler instantReadHandler = nullptr, uint16_t startRollCode = 0);
 
   bool getActive(){ return this->active; };
