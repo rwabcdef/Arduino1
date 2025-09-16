@@ -97,7 +97,7 @@ char debugSocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame debugSocketRxFrame(debugSocketRxFrameBuffer);
 SerLink::Frame debugSocketTxFrame(debugSocketTxFrameBuffer);
 
-SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, nullptr, nullptr, &debugSockInstantHandler);
+SerLink::Socket debugSocket(&writer0, &reader0, "DBG01", &debugSocketRxFrame, &debugSocketTxFrame, nullptr, &debugSockInstantHandler);
 //-----------------------
 // button socket
 char buttonSocketRxFrameBuffer[UART_BUFF_LEN];
@@ -114,9 +114,9 @@ HardMod::Std::ButtonEvent* bt0Ev[3] = {&bt0Ev0, &bt0Ev1, &bt0Ev2};
 HardMod::EventQueue bt0EvQueue(bt0Ev, 3);
 
 // General purpose ButtonEvent for buttonSocket
-HardMod::Std::ButtonEvent bt0Event;
+//HardMod::Std::ButtonEvent bt0Event;
 
-SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0Event, &bt0EvQueue);
+SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0EvQueue);
 
 //-----------------------
 
@@ -183,6 +183,8 @@ void setup() {
 
   HardMod::Std::HwModule::Adc_startConversion();
 
+  //gpio_setPinHigh(GPIO_REG__PORTB, 5);
+
 } // end setup()
 
 
@@ -218,7 +220,7 @@ void loop() {
 
     bool ok = buttonSocket.sendEvent(button0EventExt, socketTxData, true);
     if(!ok){
-      gpio_setPinHigh(GPIO_REG__PORTB, 5);
+      //gpio_setPinHigh(GPIO_REG__PORTB, 5);
     }
     
     // if(action == BUTTONEVENT__PRESSED)
@@ -231,6 +233,7 @@ void loop() {
   }
   //sei();
   buttonSocket.run();
+  echoSocket.run();
 
   /*
   cli();
@@ -343,9 +346,12 @@ void loop() {
 
   if(echoSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003ASD
   {
+    
     sprintf(socketTxData, "echo %s\0", socketRxData);
     echoSocket.sendData(socketTxData, socketRxDataLen + 5, false);
     memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
+
+    //gpio_setPinHigh(GPIO_REG__PORTB, 5);
   }
 
   // MUST check socket for rx data in order to clear flags - even if we are going to ignore the data
@@ -359,6 +365,8 @@ void loop() {
   writer0.run();
   reader0.run();
 
+  //buttonSocket.run();
+  //echoSocket.run();
   
 
 } // end loop()

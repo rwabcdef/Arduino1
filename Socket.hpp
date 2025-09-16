@@ -16,6 +16,7 @@
 #include "DebugUser.hpp"
 #include "HardMod_EventQueue.hpp"
 #include "HardMod_Event.hpp"
+#include "ButtonEvent.hpp"
 
 namespace SerLink
 {
@@ -43,7 +44,7 @@ public:
   const static uint8_t TX_STATUS_IDLE = 5;
   const static uint8_t TX_STATUS_BUSY = 6;
 
-  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame, HardMod::Event* event = nullptr,
+  Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame,
   HardMod::EventQueue* sendEventQueue = nullptr, readHandler instantReadHandler = nullptr, uint16_t startRollCode = 0);
 
   bool getActive(){ return this->active; };

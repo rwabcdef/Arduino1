@@ -8,10 +8,11 @@
 #include "Socket.hpp"
 #include "swTimer.h"
 #include "string.h"
+#include "hw_gpio.h" // for debug
 
-SerLink::Socket::Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame, HardMod::Event* event
+SerLink::Socket::Socket(Writer* writer, Reader* reader, char* protocol, Frame *rxFrame, Frame* txFrame
 ,HardMod::EventQueue* sendEventQueue,  readHandler instantReadHandler, uint16_t startRollCode):
-writer(writer), reader(reader), event(event), sendEventQueue(sendEventQueue)
+writer(writer), reader(reader), sendEventQueue(sendEventQueue) // event(event), 
 {
   this->active = true;
   this->txDataFlag = false;
@@ -112,18 +113,40 @@ bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
 bool SerLink::Socket::sendEvent(HardMod::Event &event, char* buffer, bool ack)
 {
   if(this->sendEventQueue == nullptr){
-    return false;
-  }
+    // This is not a buffered socket, i.e., it does not have a sendEventQueue
 
-  if(this->sendEventQueue->isFull())
+    this->txDataFlag = true;
+
+    this->txFrame->setProtocol(this->protocol);
+    if(event.getAck())
+    {
+      this->txFrame->type = Frame::TYPE_TRANSMISSION;
+    }
+    else
+    {
+      this->txFrame->type = Frame::TYPE_UNIDIRECTION;
+    }
+    this->txFrame->rollCode = this->txRollCode;
+    Frame::incRollCode(&this->txRollCode);
+
+    this->txFrame->dataLen = event.serialise(this->txFrame->buffer);
+
+    return true;
+  }
+  else
   {
-    return false;
+    // This is a buffered socket, i.e., it has a sendEventQueue
+    if(this->sendEventQueue->isFull())
+    {
+      return false;
+    }
+
+    event.setAck(ack);
+
+    this->sendEventQueue->put(&event);
+    return true;
   }
-
-  event.setAck(ack);
-
-  this->sendEventQueue->put(&event);
-  return true;
+  
 
 
 
@@ -162,10 +185,17 @@ void SerLink::Socket::run() // char* buffer
   {
     // send data (not event), this->txFrame is already initialised
 
+    //gpio_setPinHigh(GPIO_REG__PORTB, 5);
+
     this->txDataFlag = false;
 
     this->writer->sendFrame(this->txFrame);
     return true;
+  }
+  
+  if(this->sendEventQueue == nullptr)
+  {
+    return;
   }
 
   if(this->sendEventQueue->isEmpty())
@@ -174,8 +204,9 @@ void SerLink::Socket::run() // char* buffer
     return;
   }
   
+  HardMod::Std::ButtonEvent event;
   // get the first event to be sent from the sendEventQueue
-  this->sendEventQueue->get(this->event);
+  this->sendEventQueue->get(&event); // this->event
   
   this->txFrame->setProtocol(this->protocol);
   if(this->event->getAck())
@@ -189,7 +220,7 @@ void SerLink::Socket::run() // char* buffer
   this->txFrame->rollCode = this->txRollCode;
   Frame::incRollCode(&this->txRollCode);
 
-  this->txFrame->dataLen = this->event->serialise(this->txFrame->buffer);
+  this->txFrame->dataLen = event.serialise(this->txFrame->buffer);
   //strncpy(this->txFrame->buffer, data, dataLen);
 
   this->writer->sendFrame(this->txFrame);
