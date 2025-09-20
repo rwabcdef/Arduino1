@@ -28,6 +28,10 @@ Button::Button(uint8_t port, uint8_t pin, bool ,
   swTimer_tickReset(&this->startTick);
 }
 
+void Button::enableRelease(bool value){ this->releaseActive = value; }
+
+void Button::setLongPressThreshold(uint8_t value){ this->longPressThreshold = value; }
+
 void Button::run()
 {
   if(swTimer_tickCheckTimeout(&this->startTick, 20))

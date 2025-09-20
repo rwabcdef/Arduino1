@@ -31,6 +31,13 @@ class Button : public StateMachine
     void run();
 
     //---------------------------------------------------
+    // Config interface
+
+    void enableRelease(bool value);
+
+    void setLongPressThreshold(uint8_t value);
+
+    //---------------------------------------------------
     // Basic (flag) interface
 
     // Returns true if button pressed otherwise returns false.
