@@ -19,7 +19,7 @@ namespace HardMod
 class Event{
 
   protected:
-    bool ack;  // used when event is sent over SerLink
+    bool ack;  // used when event is sent over SerLink - does not appear in the frame payload
     char action;
     void clr();
  

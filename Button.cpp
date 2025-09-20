@@ -13,9 +13,9 @@ namespace HardMod::Std
 
 #define RUN_PERIOD_mS 20
 
-Button::Button(uint8_t port, uint8_t pin, bool ,
+Button::Button(char id, uint8_t port, uint8_t pin, bool ,
   ButtonEvent *buttonEvent, bool releaseActive, uint8_t longPressThreshold)
-: port(port), pin(pin), pressedPinState(pressedPinState)
+: FixedIdChar(id), port(port), pin(pin), pressedPinState(pressedPinState)
 , buttonEvent(buttonEvent), longPressThreshold(longPressThreshold), releaseActive(releaseActive)
 {
   this->currentState = RELEASED;
@@ -71,6 +71,9 @@ bool Button::getEvent(ButtonEvent* event)
   }
   else
   {
+    // (Re)set the buttonEvent's id (the same buttonEvent object may be re-used by several different buttons)
+    this->buttonEvent->setId(this->getId());
+
     if(event != nullptr)
     {
       this->buttonEvent->copy(event);

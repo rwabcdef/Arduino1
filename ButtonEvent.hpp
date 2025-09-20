@@ -2,6 +2,7 @@
 #define BUTTONEVENT_HPP_
 
 #include "HardMod_Event.hpp"
+#include "idChar.hpp"
 
 #define BUTTONEVENT__PRESSED 'P'
 #define BUTTONEVENT__LONGPRESS 'L'
@@ -10,7 +11,7 @@
 
 namespace HardMod::Std
 {
-class ButtonEvent: public Event
+class ButtonEvent: public Event, public VariableIdChar
 {
   protected:
     uint8_t pressDuration;
@@ -30,6 +31,14 @@ class ButtonEvent: public Event
     //--------------------
 };
 
+#define BUTTONCONFIGEVENT__LONGPRESS 'L'
+#define BUTTONCONFIGEVENT__RELEASE 'R'
+
+class ButtonConfigEvent: public Event
+{
+  protected:
+
+};
 
 
 } // end namespace HardMod

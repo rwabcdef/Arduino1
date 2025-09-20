@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "StateMachine.hpp"
+#include "idChar.hpp"
 #include "ButtonEvent.hpp"
 
 #define BUTTONMODULE_THRESHOLD 4
@@ -14,7 +15,7 @@
 namespace HardMod::Std
 {
 
-class Button : public StateMachine
+class Button : public StateMachine, public FixedIdChar
 {
   public:
     enum eventTypes{
@@ -25,7 +26,7 @@ class Button : public StateMachine
       Stuck
     };
 
-    Button(uint8_t port, uint8_t pin, bool pressedPinState,
+    Button(char id, uint8_t port, uint8_t pin, bool pressedPinState,
       ButtonEvent *buttonEvent = nullptr, bool releaseActive = false, uint8_t longPressThreshold = 0);
     
     void run();

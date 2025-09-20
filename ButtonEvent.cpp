@@ -24,6 +24,8 @@ uint8_t ButtonEvent::serialise(char* str)
   uint8_t index = 0;
   str[index++] = this->action;
 
+  str[index++] = this->getId();
+
   if(this->action == BUTTONEVENT__RELEASED)
   {
     SerLink::Utils::uint16ToStr((uint16_t) this->pressDuration, &str[index], 3);
@@ -43,6 +45,7 @@ void ButtonEvent::copy(Event* copyEvent)
 {
   ButtonEvent* copy = (ButtonEvent*) copyEvent;
   copy->setAck(this->ack);
+  copy->setId(this->getId());
   copy->setAction(this->action);
   copy->setPressDuration(this->pressDuration);
 }
