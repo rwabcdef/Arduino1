@@ -17,7 +17,7 @@ Serial monitor Ack frame: TST16A452
 #include "Reader.hpp"
 // #include "System0.hpp"
 #include "Socket.hpp"
-#include "ButtonModule.hpp"
+#include "Button.hpp"
 #include "HwModule.hpp"
 #include "HardMod_EventQueue.hpp"
 
@@ -132,7 +132,7 @@ uint16_t socketRxDataLen;
 HardMod::Std::ButtonEvent button0Event, button0EventExt;
 
 // Button: Pin B3 (Pin 11)
-HardMod::Std::ButtonModule button0(GPIO_REG__PORTB, 3, false, &button0Event, true, 150);
+HardMod::Std::Button button0(GPIO_REG__PORTB, 3, false, &button0Event, true, 150);
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");

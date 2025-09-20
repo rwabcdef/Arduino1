@@ -1,7 +1,7 @@
 
 
-#ifndef BUTTONMODULE_HPP_
-#define BUTTONMODULE_HPP_
+#ifndef BUTTON_HPP_
+#define BUTTON_HPP_
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -14,7 +14,7 @@
 namespace HardMod::Std
 {
 
-class ButtonModule : public StateMachine
+class Button : public StateMachine
 {
   public:
     enum eventTypes{
@@ -25,7 +25,7 @@ class ButtonModule : public StateMachine
       Stuck
     };
 
-    ButtonModule(uint8_t port, uint8_t pin, bool pressedPinState,
+    Button(uint8_t port, uint8_t pin, bool pressedPinState,
       ButtonEvent *buttonEvent = nullptr, bool releaseActive = false, uint8_t longPressThreshold = 0);
     
     void run();

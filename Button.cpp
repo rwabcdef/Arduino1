@@ -1,4 +1,4 @@
-#include "ButtonModule.hpp"
+#include "Button.hpp"
 #include "swTimer.h"
 #include "hw_gpio.h"
 
@@ -13,7 +13,7 @@ namespace HardMod::Std
 
 #define RUN_PERIOD_mS 20
 
-ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool ,
+Button::Button(uint8_t port, uint8_t pin, bool ,
   ButtonEvent *buttonEvent, bool releaseActive, uint8_t longPressThreshold)
 : port(port), pin(pin), pressedPinState(pressedPinState)
 , buttonEvent(buttonEvent), longPressThreshold(longPressThreshold), releaseActive(releaseActive)
@@ -28,7 +28,7 @@ ButtonModule::ButtonModule(uint8_t port, uint8_t pin, bool ,
   swTimer_tickReset(&this->startTick);
 }
 
-void ButtonModule::run()
+void Button::run()
 {
   if(swTimer_tickCheckTimeout(&this->startTick, 20))
   {
@@ -40,7 +40,7 @@ void ButtonModule::run()
   }
 }
 
-ButtonModule::eventTypes ButtonModule::getEvent(uint8_t* pressDuration)
+Button::eventTypes Button::getEvent(uint8_t* pressDuration)
 {
   eventTypes ret = this->eventType;
   if(this->eventType == Released)
@@ -56,7 +56,7 @@ ButtonModule::eventTypes ButtonModule::getEvent(uint8_t* pressDuration)
   return ret;
 }
 
-bool ButtonModule::getEvent(ButtonEvent* event)
+bool Button::getEvent(ButtonEvent* event)
 {
   this->eventType = None;  // clear event (flag inetrface)
 
@@ -75,9 +75,9 @@ bool ButtonModule::getEvent(ButtonEvent* event)
   }
 }
 //---------------------------------------------------
-ButtonModule::internalEventTypes ButtonModule::eventCheck()
+Button::internalEventTypes Button::eventCheck()
 {
-  ButtonModule::internalEventTypes ret = NoEvent;
+  Button::internalEventTypes ret = NoEvent;
   bool currentPinState = gpio_getPinState(this->port, this->pin);
   if(this->stable)
   {
@@ -137,9 +137,9 @@ ButtonModule::internalEventTypes ButtonModule::eventCheck()
 //---------------------------------------------------
 
 // state methods
-uint8_t ButtonModule::released()
+uint8_t Button::released()
 {
-  ButtonModule::internalEventTypes event = this->eventCheck();
+  Button::internalEventTypes event = this->eventCheck();
   if(event == Edge)
   {
     this->eventType = Pressed;    // set event code (flag interface)
@@ -155,9 +155,9 @@ uint8_t ButtonModule::released()
   return RELEASED;
 }
 
-uint8_t ButtonModule::pressed()
+uint8_t Button::pressed()
 {
-  ButtonModule::internalEventTypes event = this->eventCheck();
+  Button::internalEventTypes event = this->eventCheck();
   if(event == NoEvent)
   {
     this->pressedCount++;
