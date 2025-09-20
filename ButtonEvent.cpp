@@ -50,4 +50,42 @@ void ButtonEvent::copy(Event* copyEvent)
   copy->setPressDuration(this->pressDuration);
 }
 
+
+ButtonConfigEvent::ButtonConfigEvent()
+{
+  this->value = 0;
+}
+
+bool ButtonConfigEvent::deSerialise(char* str)
+{
+  uint8_t index = 0;
+
+  this->action = str[index++];
+  this->setId(str[index++]);
+
+  if(this->action == BUTTONCONFIGEVENT__LONGPRESS)
+  {
+    this->value = SerLink::Utils::strToUint8(str[index], 3);
+  }
+  else if(this->action == BUTTONCONFIGEVENT__RELEASE)
+  {
+    this->value = str[index] == '0' ? 0 : 1;
+  }
+  else
+  {
+    this->value = 0;
+  }
+  return true;
+}
+
+uint8_t ButtonConfigEvent::getLongPressThreshold()
+{
+  return this->value;
+}
+
+bool ButtonConfigEvent::getEnableRelease()
+{
+  return this->value == 0 ? false : true;
+}
+
 } // end namespace HardMod

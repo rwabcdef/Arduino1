@@ -31,12 +31,34 @@ class ButtonEvent: public Event, public VariableIdChar
     //--------------------
 };
 
+//------------------------------------------------------------
+// ButtonConfigEvent
+
 #define BUTTONCONFIGEVENT__LONGPRESS 'L'
 #define BUTTONCONFIGEVENT__RELEASE 'R'
 
-class ButtonConfigEvent: public Event
+class ButtonConfigEvent: public Event, public VariableIdChar
 {
   protected:
+    uint8_t value;
+    // uint8_t longPressThreshold;
+    // bool enableRelease;
+
+  public:
+    ButtonConfigEvent();
+    
+    uint8_t getLongPressThreshold();
+
+    bool getEnableRelease();
+
+    //--------------------
+    // Over-ridden base class methods
+    bool deSerialise(char* str);
+
+    void clear();
+
+    void copy(Event* copyEvent);
+    //--------------------
 
 };
 
