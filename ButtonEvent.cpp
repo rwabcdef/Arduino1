@@ -22,9 +22,9 @@ uint8_t ButtonEvent::getPressDuration()
 uint8_t ButtonEvent::serialise(char* str)
 {
   uint8_t index = 0;
-  str[index++] = this->action;
-
+  
   str[index++] = this->getId();
+  str[index++] = this->action;
 
   if(this->action == BUTTONEVENT__RELEASED)
   {
@@ -60,8 +60,8 @@ bool ButtonConfigEvent::deSerialise(char* str)
 {
   uint8_t index = 0;
 
-  this->action = str[index++];
   this->setId(str[index++]);
+  this->action = str[index++];
 
   if(this->action == BUTTONCONFIGEVENT__LONGPRESS)
   {
