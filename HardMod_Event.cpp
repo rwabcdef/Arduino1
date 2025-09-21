@@ -67,12 +67,4 @@ void Event::clr()
   this->action = EVENT__NONE;
 }
 
-//------------------------------------------------------------
-HasUnitId::HasUnitId(char unitId): unitId(unitId) {}
-
-void HasUnitId::setUnitId(char unitId)
-{
-  this->unitId = unitId;
-}
-
 } // end namespace HardMod

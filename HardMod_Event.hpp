@@ -53,16 +53,6 @@ class Event{
     virtual void clear();
  };
 
- //------------------------------------------------------------
- class HasUnitId{
-
-  protected:
-    char unitId;
-  public:
-    HasUnitId(char unitId);
-    void setUnitId(char unitId);
- };
-
 } // end namespace ArdMod
 
 
