@@ -34,6 +34,21 @@ class App:
           
         print('CLI.run() end') 
 
+  class Event:
+    def __init__(self, id, action):
+      self.id = id
+      self.action = action
+
+    @staticmethod
+    def createEvent(id, action):
+      event = App.Event(id, action)
+      return event
+    
+  class ButtonEvent(Event):
+    def __init__(self, id, action, pressDuration=0):
+      App.Event(id, action)
+      self.pressDuration = pressDuration
+
   class Module:
     class Led:
       def __init__(self, socket, idChar=''):
