@@ -31,6 +31,7 @@ Button0: Pin 11 (PB3)
 
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
+uint8_t calcADCPercentage(uint16_t value);
 
 static uint16_t startTick;
 static bool g_ledState = false;
@@ -119,6 +120,16 @@ HardMod::Std::ButtonEvent bt0Event;
 SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0Event, &bt0EvQueue);
 
 //-----------------------
+// pot0 socket
+char pot0SocketRxFrameBuffer[UART_BUFF_LEN];
+char pot0SocketTxFrameBuffer[UART_BUFF_LEN];
+
+SerLink::Frame pot0SocketRxFrame(echoSocketRxFrameBuffer);
+SerLink::Frame pot0SocketTxFrame(echoSocketTxFrameBuffer);
+
+SerLink::Socket pot0Socket(&writer0, &reader0, "POT01", &pot0SocketRxFrame, &pot0SocketTxFrame);
+
+//-----------------------
 
 //-----------------------
 // general purpose socket data buffers
@@ -195,6 +206,7 @@ void loop() {
   static uint8_t pressDuration;
   
   uint16_t txFrameCount = 0;
+  static uint8_t prevAdcPercent;
   
   //cli();
   buttonA.run();
@@ -271,13 +283,29 @@ void loop() {
   */
 
   cli();
-  if(swTimer_tickCheckTimeout(&startTick, 3000))
+  if(swTimer_tickCheckTimeout(&startTick, 1000))
   {
     // sprintf(txData, "%03d", count++);
     // buttonSocket.sendData(txData, 3, true);
     //frameSent = true;
 
     //toggleBuiltInLed();
+    if(HardMod::Std::HwModule::Adc_isConversionComplete())
+    {
+      uint8_t adcPercent = HardMod::Std::HwModule::Adc_getResultPercent();
+      if(adcPercent != prevAdcPercent)
+      {
+        sprintf(txData, "%03d", adcPercent);
+        pot0Socket.sendData(txData, 3, true);
+      }
+      prevAdcPercent = adcPercent;
+
+      // Pin A0 (ADC0 - Pin23)
+      HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
+
+      HardMod::Std::HwModule::Adc_startConversion();
+    }
+    
   }
   sei();
 
@@ -367,6 +395,7 @@ void loop() {
 
   buttonSocket.run();
   echoSocket.run();
+  pot0Socket.run();
   
 
 } // end loop()
