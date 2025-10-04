@@ -20,6 +20,7 @@ Serial monitor Ack frame: TST16A452
 #include "Button.hpp"
 #include "HwModule.hpp"
 #include "HardMod_EventQueue.hpp"
+#include "Adc.hpp"
 
 /*
 Hardware Config
@@ -130,7 +131,11 @@ SerLink::Frame pot0SocketTxFrame(echoSocketTxFrameBuffer);
 SerLink::Socket pot0Socket(&writer0, &reader0, "POT01", &pot0SocketRxFrame, &pot0SocketTxFrame);
 
 //-----------------------
+HardMod::Std::AdcInput pot0AdcInput(HardMod::Std::HwModule::AdcInputValues::ADC0);
 
+HardMod::Std::AdcInput* AdcInputs[] = {&pot0AdcInput};
+
+HardMod::Std::Adc adc(AdcInputs, 1);
 //-----------------------
 // general purpose socket data buffers
 
@@ -187,12 +192,12 @@ void setup() {
   sprintf(txData, "AAA", nullptr);
 
   //--------------------------
-  HardMod::Std::HwModule::Adc_init(HardMod::Std::HwModule::PS_128);
+  // HardMod::Std::HwModule::Adc_init(HardMod::Std::HwModule::PS_128);
 
-  // Pin A0 (ADC0 - Pin23)
-  HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
+  // // Pin A0 (ADC0 - Pin23)
+  // HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
 
-  HardMod::Std::HwModule::Adc_startConversion();
+  // HardMod::Std::HwModule::Adc_startConversion();
 
   //gpio_setPinHigh(GPIO_REG__PORTB, 5);
 
@@ -206,7 +211,8 @@ void loop() {
   static uint8_t pressDuration;
   
   uint16_t txFrameCount = 0;
-  static uint8_t prevAdcPercent;
+  //static uint8_t prevAdcPercent;
+  static uint8_t previous = 150;
   
   //cli();
   buttonA.run();
@@ -283,31 +289,45 @@ void loop() {
   */
 
   cli();
-  if(swTimer_tickCheckTimeout(&startTick, 1000))
+  if(swTimer_tickCheckTimeout(&startTick, 250))
   {
-    // sprintf(txData, "%03d", count++);
-    // buttonSocket.sendData(txData, 3, true);
-    //frameSent = true;
-
-    //toggleBuiltInLed();
-    if(HardMod::Std::HwModule::Adc_isConversionComplete())
+    uint8_t current;
+    if(adc.getValue(0, &current))
     {
-      uint8_t adcPercent = HardMod::Std::HwModule::Adc_getResultPercent();
-      if(adcPercent != prevAdcPercent)
-      {
-        sprintf(txData, "%03d", adcPercent);
-        pot0Socket.sendData(txData, 3, true);
+      if(current != previous){
+        sprintf(txData, "%03d", current);
+        pot0Socket.sendData(txData, 3, false);
       }
-      prevAdcPercent = adcPercent;
-
-      // Pin A0 (ADC0 - Pin23)
-      HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
-
-      HardMod::Std::HwModule::Adc_startConversion();
+      previous = current;
     }
-    
   }
   sei();
+
+  // cli();
+  // if(swTimer_tickCheckTimeout(&startTick, 1000))
+  // {
+  //   // sprintf(txData, "%03d", count++);
+  //   // buttonSocket.sendData(txData, 3, true);
+  //   //frameSent = true;
+
+  //   //toggleBuiltInLed();
+  //   if(HardMod::Std::HwModule::Adc_isConversionComplete())
+  //   {
+  //     uint8_t adcPercent = HardMod::Std::HwModule::Adc_getResultPercent();
+  //     if(adcPercent != prevAdcPercent)
+  //     {
+  //       sprintf(txData, "%03d", adcPercent);
+  //       pot0Socket.sendData(txData, 3, true);
+  //     }
+  //     prevAdcPercent = adcPercent;
+
+  //     // Pin A0 (ADC0 - Pin23)
+  //     HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
+
+  //     HardMod::Std::HwModule::Adc_startConversion();
+  //   }
+  // }
+  // sei();
 
   if(frameSent)
   {
@@ -396,6 +416,8 @@ void loop() {
   buttonSocket.run();
   echoSocket.run();
   pot0Socket.run();
+
+  adc.run();
   
 
 } // end loop()

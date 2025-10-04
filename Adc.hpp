@@ -12,6 +12,8 @@ class AdcInput {
     HwModule::AdcInputValues input;
     uint8_t percent; // 0 - 100%
     bool newValueFlag;
+
+    AdcInput(HwModule::AdcInputValues input) : input(input), percent(0), newValueFlag(false) {}
 };
 
 class Adc {
