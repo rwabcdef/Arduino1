@@ -29,6 +29,8 @@ uint8_t PotEvent::serialise(char* str)
 
     SerLink::Utils::uint16ToStr((uint8_t)this->percent, &str[index], 3);
 
+    index = index + 3;
+
     return index;
 }
 
