@@ -25,7 +25,7 @@ uint8_t PotEvent::serialise(char* str)
     uint8_t index = 0;
 
     str[index++] = this->getId();
-    str[index++] = this->action;
+    //str[index++] = this->action; // ignore action
 
     SerLink::Utils::uint16ToStr((uint8_t)this->percent, &str[index], 3);
 
@@ -55,6 +55,7 @@ Pot::Pot(char id, Adc* adc, uint8_t adcIndex) : FixedIdChar(id), adc(adc), adcIn
     this->buffer[0] = 0;
     this->buffer[1] = 0;
     this->percent = -1;
+    this->initialState = true;
     swTimer_tickReset(&this->startTick);
 }
 
@@ -91,6 +92,16 @@ void Pot::run()
     bool newValue = this->adc->getValue(this->adcIndex, &current);
     if (!newValue){
       return;
+    }
+
+    if(this->initialState)
+    {
+      this->buffer[this->bufferIndex++] = current;
+      if(this->bufferIndex >= 2)
+      {
+        this->initialState = false;
+        this->bufferIndex = 0;
+      }
     }
     
     uint8_t previous = (this->buffer[0] + this->buffer[1]) >> 1; // average of last two readings

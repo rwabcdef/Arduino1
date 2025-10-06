@@ -39,6 +39,7 @@ class Pot : public FixedIdChar
     uint8_t adcIndex;
     int8_t percent;
     uint16_t startTick;
+    bool initialState;
 
   public:
     Pot(char id, Adc* adc, uint8_t adcIndex);

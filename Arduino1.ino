@@ -21,6 +21,7 @@ Serial monitor Ack frame: TST16A452
 #include "HwModule.hpp"
 #include "HardMod_EventQueue.hpp"
 #include "Adc.hpp"
+#include "pot.hpp"
 
 /*
 Hardware Config
@@ -121,6 +122,19 @@ HardMod::Std::ButtonEvent bt0Event;
 SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0Event, &bt0EvQueue);
 
 //-----------------------
+// ADC
+HardMod::Std::AdcInput potAadcInput(HardMod::Std::HwModule::AdcInputValues::ADC0);
+
+HardMod::Std::AdcInput* AdcInputs[] = {&potAadcInput};
+
+HardMod::Std::Adc adc(AdcInputs, 1);
+//-----------------------
+// PotA
+
+HardMod::Std::PotEvent potEvent; // event for all Pots
+
+HardMod::Std::Pot potA('A', &adc, 0);
+//-----------------------
 // pot0 socket
 char pot0SocketRxFrameBuffer[UART_BUFF_LEN];
 char pot0SocketTxFrameBuffer[UART_BUFF_LEN];
@@ -128,14 +142,19 @@ char pot0SocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame pot0SocketRxFrame(echoSocketRxFrameBuffer);
 SerLink::Frame pot0SocketTxFrame(echoSocketTxFrameBuffer);
 
-SerLink::Socket pot0Socket(&writer0, &reader0, "POT01", &pot0SocketRxFrame, &pot0SocketTxFrame);
+// PotEvents for EventQueue for potSocket
+HardMod::Std::PotEvent ptEv0, ptEv1, ptEv2;
+HardMod::Std::PotEvent* ptEv[3] = {&ptEv0, &ptEv1, &ptEv2};
 
-//-----------------------
-HardMod::Std::AdcInput pot0AdcInput(HardMod::Std::HwModule::AdcInputValues::ADC0);
+// EventQueue for potSocket
+HardMod::EventQueue ptEvQueue(ptEv, 3);
 
-HardMod::Std::AdcInput* AdcInputs[] = {&pot0AdcInput};
+// General purpose ButtonEvent for buttonSocket
+HardMod::Std::PotEvent ptEvent;
 
-HardMod::Std::Adc adc(AdcInputs, 1);
+//SerLink::Socket buttonSocket(&writer0, &reader0, "BUT01", &buttonSocketRxFrame, &buttonSocketTxFrame, &bt0Event, &bt0EvQueue);
+
+SerLink::Socket potSocket(&writer0, &reader0, "POT01", &pot0SocketRxFrame, &pot0SocketTxFrame, &ptEvent, &ptEvQueue);
 //-----------------------
 // general purpose socket data buffers
 
@@ -288,20 +307,28 @@ void loop() {
   sei();
   */
 
-  cli();
-  if(swTimer_tickCheckTimeout(&startTick, 250))
+  if(potA.getEvent(&potEvent))
   {
-    uint8_t current;
-    if(adc.getValue(0, &current))
-    {
-      if(current != previous){
-        sprintf(txData, "%03d", current);
-        pot0Socket.sendData(txData, 3, false);
-      }
-      previous = current;
-    }
+    // uint8_t len = potEvent.serialise(txData);
+    // potSocket.sendData(txData, len, false);
+
+    potSocket.sendEvent(potEvent, socketTxData, false);
   }
-  sei();
+
+  // cli();
+  // if(swTimer_tickCheckTimeout(&startTick, 250))
+  // {
+  //   uint8_t current;
+  //   if(adc.getValue(0, &current))
+  //   {
+  //     if(current != previous){
+  //       sprintf(txData, "%03d", current);
+  //       pot0Socket.sendData(txData, 3, false);
+  //     }
+  //     previous = current;
+  //   }
+  // }
+  // sei();
 
   // cli();
   // if(swTimer_tickCheckTimeout(&startTick, 1000))
@@ -415,9 +442,10 @@ void loop() {
 
   buttonSocket.run();
   echoSocket.run();
-  pot0Socket.run();
+  potSocket.run();
 
   adc.run();
+  potA.run();
   
 
 } // end loop()
