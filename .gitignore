@@ -31,3 +31,7 @@
 *.out
 *.app
 /Debug/
+
+# added by RW
+PC/Transport/node_js/node_modules/
+PC/Transport/node_js/package-lock.json
