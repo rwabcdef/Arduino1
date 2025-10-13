@@ -23,4 +23,5 @@ import * as readline from "readline";
 const portName = "/dev/ttyACM0"; // or "/dev/ttyUSB0" on Linux/macOS , COM3
 const baudRate = 19200;
 
-const serLink = new SerLink(portName, baudRate, true);
+const serLink = new SerLink(true);
+serLink.init(portName, baudRate);
