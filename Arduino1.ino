@@ -22,6 +22,7 @@ Serial monitor Ack frame: TST16A452
 #include "HardMod_EventQueue.hpp"
 #include "Adc.hpp"
 #include "pot.hpp"
+#include "Led.hpp"
 
 /*
 Hardware Config
@@ -169,6 +170,13 @@ HardMod::Std::ButtonEvent buttonAEvent; //, button0EventExt;
 // Button: Pin B3 (Pin 11)
 HardMod::Std::Button buttonA('A', GPIO_REG__PORTB, 3, false, &buttonAEvent, true, 150);
 
+//-----------------------
+
+HardMod::Std::Led greenLed(GPIO_REG__PORTB, 5);
+HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
+//-----------------------
+
+
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
 
@@ -193,14 +201,14 @@ void setup() {
   //--------------------------
   // Green Led
   // Pin B5 (Pin 13)
-  gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__OUT);
+  //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__OUT);
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
   gpio_setPinLow(GPIO_REG__PORTB, 5);
   //--------------------------
   // Red Led
   // Pin B4 (Pin 12)
-  gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__OUT);
+  //gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__OUT);
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
   gpio_setPinLow(GPIO_REG__PORTB, 4);
@@ -394,11 +402,13 @@ void loop() {
       // Green Led
       if(socketRxData[1] == '1')
       {
-        gpio_setPinHigh(GPIO_REG__PORTB, 5);
+        //gpio_setPinHigh(GPIO_REG__PORTB, 5);
+        greenLed.on();
       }
       else if(socketRxData[1] == '0')
       {
-        gpio_setPinLow(GPIO_REG__PORTB, 5);
+        //gpio_setPinLow(GPIO_REG__PORTB, 5);
+        greenLed.off();
       }
       else{ /* do nothing */ }
     }
@@ -407,17 +417,22 @@ void loop() {
       // Red Led
       if(socketRxData[1] == '1')
       {
-        gpio_setPinHigh(GPIO_REG__PORTB, 4);
+        //gpio_setPinHigh(GPIO_REG__PORTB, 4);
+        redLed.on();
       }
       else if(socketRxData[1] == '0')
       {
-        gpio_setPinLow(GPIO_REG__PORTB, 4);
+        //gpio_setPinLow(GPIO_REG__PORTB, 4);
+        redLed.off();
       }
       else{ /* do nothing */ }
     }
     
     memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
   }
+  greenLed.run();
+  redLed.run();
+
 
   if(echoSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003ASD
   {
