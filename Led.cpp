@@ -1,9 +1,76 @@
 #include "Led.hpp"
 #include "swTimer.h"
 #include "hw_gpio.h"
+#include "SerLink_Utils.hpp"
 
 namespace HardMod::Std
 {
+
+LedEvent::LedEvent(): Event()
+{
+  this->type = None;
+}
+
+LedEvent::eventTypes LedEvent::getType(LedFlashParams* flashParams)
+{
+  if(flashParams != nullptr && this->type == Flash)
+  {
+    flashParams->numFlashes = this->numFlashes;
+    flashParams->onPeriods = this->onPeriods;
+    flashParams->offPeriods = this->offPeriods;
+  }
+  return this->type;
+}
+
+bool LedEvent::deSerialise(char* str)
+{
+  this->clr(); // base class clr()
+
+  this->setId(str[0]);
+  this->setAction(str[1]);
+
+  switch(this->action)
+  {
+    case LEDEVENT__ON:
+      this->type = On;
+      break;
+    case LEDEVENT__OFF:
+      this->type = Off;
+      break;
+    case LEDEVENT__FLASH:
+      this->type = Flash;
+      this->numFlashes = SerLink::Utils::strToUint8(&str[2], 2);
+      this->onPeriods = SerLink::Utils::strToUint8(&str[4], 2);
+      this->offPeriods = SerLink::Utils::strToUint8(&str[6], 2);
+      break;
+    default:
+      this->type = None;
+      return false;
+  }
+  return true;
+}
+
+void LedEvent::clear()
+{
+  this->clr();         // base class clr()
+  this->type = None;
+  this->numFlashes = 0;
+  this->onPeriods = 0;
+  this->offPeriods = 0;
+}
+
+void LedEvent::copy(Event* copyEvent)
+{
+  LedEvent* copy = (LedEvent*) copyEvent;
+  copy->setAck(this->ack);
+  copy->setId(this->getId());
+  copy->setAction(this->action);
+  copy->type = this->type;
+  copy->numFlashes = this->numFlashes;
+  copy->onPeriods = this->onPeriods;
+  copy->offPeriods = this->offPeriods;
+}
+//-----------------------------------------------------------------------------------
 
 #define STATE_OFF 0
 #define STATE_ON 1

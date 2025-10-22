@@ -168,7 +168,7 @@ uint16_t socketRxDataLen;
 HardMod::Std::ButtonEvent buttonAEvent; //, button0EventExt;
 
 // Button: Pin B3 (Pin 11)
-HardMod::Std::Button buttonA('A', GPIO_REG__PORTB, 3, false, &buttonAEvent, true, 150);
+HardMod::Std::Button buttonA('A', GPIO_REG__PORTB, 3, false, true, 150);
 
 //-----------------------
 
@@ -254,7 +254,7 @@ void loop() {
   //   sprintf(socketTxData, "%s\0", "RL");
   //   buttonSocket.sendData(socketTxData, 2, true);
   // }
-  if(buttonA.getEvent() == true)
+  if(buttonA.getEvent(&buttonAEvent) == true)
   {
     char action = buttonAEvent.getAction();
     if(action == BUTTONEVENT__RELEASED)

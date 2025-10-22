@@ -14,9 +14,9 @@ namespace HardMod::Std
 #define RUN_PERIOD_mS 20
 
 Button::Button(char id, uint8_t port, uint8_t pin, bool ,
-  ButtonEvent *buttonEvent, bool releaseActive, uint8_t longPressThreshold)
+  bool releaseActive, uint8_t longPressThreshold)
 : FixedIdChar(id), port(port), pin(pin), pressedPinState(pressedPinState)
-, buttonEvent(buttonEvent), longPressThreshold(longPressThreshold), releaseActive(releaseActive)
+, longPressThreshold(longPressThreshold), releaseActive(releaseActive)
 {
   this->currentState = RELEASED;
   this->eventPinState = this->pressedPinState;
@@ -52,34 +52,40 @@ Button::eventTypes Button::getEvent(uint8_t* pressDuration)
     *pressDuration = this->pressedCount;
   }
   this->eventType = None;  // clear event (flag inetrface)
-  if(this->buttonEvent != nullptr)
-  {
-    // clear event object (event object interface)
-    this->buttonEvent->clear();
-  }
   return ret;
 }
 
 bool Button::getEvent(ButtonEvent* event)
 {
-  this->eventType = None;  // clear event (flag inetrface)
-
-  if(this->buttonEvent->getAction() == EVENT__NONE)
+  bool ret = false;
+  if(this->eventType == None)
   {
-    // no action has occurred
     return false;
   }
-  else
+  else if(this->eventType == Released)
   {
-    // (Re)set the buttonEvent's id (the same buttonEvent object may be re-used by several different buttons)
-    this->buttonEvent->setId(this->getId());
-
-    if(event != nullptr)
-    {
-      this->buttonEvent->copy(event);
-    }
-    return true;
+    event->setAction(BUTTONEVENT__RELEASED);
+    event->setId(this->getId());
+    event->setPressDuration(this->pressedCount);
+    ret = true; 
   }
+  else if(this->eventType == Pressed)
+  {
+    event->setAction(BUTTONEVENT__PRESSED);
+    event->setId(this->getId());
+    ret = true; 
+  }
+  else if(this->eventType == LongPressed)
+  {
+    event->setAction(BUTTONEVENT__LONGPRESS);
+    event->setId(this->getId());
+    ret = true; 
+  }
+  else{
+    // do nothing
+  }
+  this->eventType = None;
+  return ret;
 }
 //---------------------------------------------------
 Button::internalEventTypes Button::eventCheck()
@@ -150,11 +156,6 @@ uint8_t Button::released()
   if(event == Edge)
   {
     this->eventType = Pressed;    // set event code (flag interface)
-    if(this->buttonEvent != nullptr)
-    {
-      // set event object's action code (event object interface)
-      this->buttonEvent->setAction(BUTTONEVENT__PRESSED); 
-    }
     this->pressedCount = 0;
 
     return PRESSED;
@@ -186,15 +187,11 @@ uint8_t Button::pressed()
   else if(event == Edge)
   {
     // Button released
-    this->eventType = Released;
-    if((this->buttonEvent != nullptr) && (this->releaseActive == true))
+    if(this->releaseActive == true)
     {
-      // set event object's action code (event object interface)
-      this->buttonEvent->setAction(BUTTONEVENT__RELEASED);
-      
-      // Set the press duration
-      this->buttonEvent->setPressDuration(this->pressedCount);
+      this->eventType = Released;    // set event code (flag interface)
     }
+    
     this->eventPinState = this->pressedPinState;
     return RELEASED;
   }
@@ -202,12 +199,6 @@ uint8_t Button::pressed()
   {
     // long press
     this->eventType = LongPressed;    // set event code (flag interface)
-
-    if(this->buttonEvent != nullptr)
-    {
-      // set event object's action code (event object interface)
-      this->buttonEvent->setAction(BUTTONEVENT__LONGPRESS);
-    }
     
     return PRESSED;
   }

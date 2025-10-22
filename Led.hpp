@@ -9,6 +9,10 @@
 
 #define LED_PERIOD_mS 250
 
+#define LEDEVENT__ON '1'
+#define LEDEVENT__OFF '0'
+#define LEDEVENT__FLASH 'F'
+
 namespace HardMod::Std
 {
 

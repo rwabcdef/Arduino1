@@ -27,7 +27,7 @@ class Button : public StateMachine, public FixedIdChar
     };
 
     Button(char id, uint8_t port, uint8_t pin, bool pressedPinState,
-      ButtonEvent *buttonEvent = nullptr, bool releaseActive = false, uint8_t longPressThreshold = 0);
+      bool releaseActive = false, uint8_t longPressThreshold = 0);
     
     void run();
 
@@ -58,7 +58,7 @@ class Button : public StateMachine, public FixedIdChar
   protected:    
     uint8_t port;
     uint8_t pin;
-    ButtonEvent *buttonEvent;
+    //ButtonEvent *buttonEvent;
     uint8_t longPressThreshold;
     bool releaseActive;
     bool pressedPinState;
