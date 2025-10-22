@@ -66,6 +66,25 @@ bool SerLink::Socket::getRxData(char* data, uint16_t* dataLen)
   return false;
 }
 
+bool SerLink::Socket::getRxEvent(HardMod::Event &event)
+{
+  if(this->rxFrame == nullptr)
+  {
+    // This is a write only socket (this->rxFrame == nullptr in order to save memory) - so do nothing
+    return false;
+  }
+
+  if(this->reader->getRxFrameProtocol(this->rxFrame, this->protocol))
+  {
+    // de-serialise the event
+    if(event.deSerialise(this->rxFrame->buffer))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool SerLink::Socket::sendData(char* data, uint16_t dataLen, bool ack)
 {
   if(this->txFrame == nullptr)

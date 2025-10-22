@@ -64,6 +64,10 @@ public:
   // Returns the send status, and clears it.
   uint8_t getAndClearSendStatus();
 
+  // Gets received event from the socket (sent by the remote device).
+  // Returns true if received event is ready to be read from the socket.
+  bool getRxEvent(HardMod::Event &event);
+
   // Serialises the event and then sends the data.
   bool sendEvent(HardMod::Event &event, char* buffer, bool ack);
 

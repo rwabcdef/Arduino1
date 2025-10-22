@@ -83,6 +83,8 @@ SerLink::Socket ledSocket(&writer0, &reader0, "LED01", &ledSocketRxFrame, &ledSo
 #define LED_SOCKET_RX_DATA_LEN 10
 char ledSocketData[LED_SOCKET_RX_DATA_LEN] = {0};
 uint16_t ledSocketRxDataLen;
+
+HardMod::Std::LedEvent ledEvent;
 //-----------------------
 // echo socket
 char echoSocketRxFrameBuffer[UART_BUFF_LEN];
