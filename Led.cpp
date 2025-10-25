@@ -179,6 +179,12 @@ uint8_t Led::flashOffState(){
   {
     this->periodCount = 0;
     this->flashCount++;
+    if(this->numFlashes == 0)
+    {
+      // special case - infinite flashes
+      gpio_setPinHigh(this->port, this->pin);
+      return STATE_FLASH_ON;
+    }
     if(this->flashCount >= this->numFlashes)
     {
       gpio_setPinLow(this->port, this->pin);

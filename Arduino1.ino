@@ -434,6 +434,10 @@ void loop() {
   //   memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
   // }
 
+  // LED01T805002G1 LED01T805002G0
+  // LED01T805008GF030104 - 3 flashes
+  // LED01T805008GF000104 - continuous flashing
+  // 
   if(ledSocket.getRxEvent(ledEvent))
   {
     HardMod::Std::LedFlashParams ledFlashParams;
