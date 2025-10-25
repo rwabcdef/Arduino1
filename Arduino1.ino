@@ -23,6 +23,7 @@ Serial monitor Ack frame: TST16A452
 #include "Adc.hpp"
 #include "pot.hpp"
 #include "Led.hpp"
+#include "Registers.h"
 
 /*
 Hardware Config
@@ -491,7 +492,7 @@ void loop() {
   }
 
   // MUST check socket for rx data in order to clear flags - even if we are going to ignore the data
-  if(debugSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003ASD DBG01T156003aSD
+  if(debugSocket.getRxData(socketRxData, &socketRxDataLen)) // ECHO1T076004abcd LED01T805003abc DBG01T156003RPB // DBG01T156003ASD DBG01T156003aSD
   {
     // sprintf(socketTxData, "dbg %s\0", socketRxData);
     // echoSocket.sendData(socketTxData, socketRxDataLen + 4, false);
@@ -513,14 +514,28 @@ void loop() {
 
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
 {
-  if(rxFrame.buffer[0] == 'A')
+  // if(rxFrame.buffer[0] == 'A')
+  // {
+  //   memset(data, 0, 10); // clear outgoing buffer
+  //   strcpy(data, "ABCD\0");
+  //   *dataLen = 4;
+  //   return true;
+  // }
+  uint8_t index = 0;
+  if(rxFrame.buffer[index++] == 'R')
   {
-    memset(data, 0, 10); // clear outgoing buffer
-    strcpy(data, "ABCD\0");
-    *dataLen = 4;
-    return true;
+    if(rxFrame.buffer[index++] == 'P')
+    {
+      if(rxFrame.buffer[index++] == 'B')
+      {
+        // read port B
+        memset(data, 0, 10); // clear outgoing buffer
+        *dataLen = readPortB(data);
+        return true;
+      }
+    }
   }
-  else
+  else  // readPortB
   {
     return false;
   }
