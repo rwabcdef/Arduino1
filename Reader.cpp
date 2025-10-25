@@ -138,6 +138,8 @@ bool Reader::getRxFrameProtocol(Frame* rxFrame, char* protocol)
     {
       this->rxFrame->copy(rxFrame);
 
+      rxFrame->buffer[rxFrame->dataLen] = '\0';
+
       this->rxFlag = false;
 
       return true;

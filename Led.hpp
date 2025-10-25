@@ -39,11 +39,11 @@ class LedEvent: public Event, public VariableIdChar {
     //--------------------
     // Over-ridden base class methods
 
-    bool deSerialise(char* str);
+    bool deSerialise(char* str) override;
 
-    void clear();
+    void clear() override;
 
-    void copy(Event* copyEvent);
+    void copy(Event* copyEvent) override;
     //--------------------
   protected:
     eventTypes type;
@@ -67,7 +67,7 @@ class Led : public StateMachine {
     LedEvent::eventTypes type;
     uint8_t numFlashes;
     uint8_t flashCount;
-    uint8_t periodCount;
+    int8_t periodCount;
     uint8_t onPeriods;
     uint8_t offPeriods;
     uint16_t startTick;

@@ -160,7 +160,8 @@ uint8_t Led::offState(){
 }
 
 uint8_t Led::flashOnState(){
-  if(this->periodCount > this->onPeriods)
+  //this->periodCount++;
+  if(this->periodCount >= this->onPeriods)
   {
     this->periodCount = 0;
     gpio_setPinLow(this->port, this->pin);
@@ -174,7 +175,7 @@ uint8_t Led::flashOnState(){
 }
 
 uint8_t Led::flashOffState(){
-  if(this->periodCount > this->offPeriods)
+  if(this->periodCount >= this->offPeriods)
   {
     this->periodCount = 0;
     this->flashCount++;

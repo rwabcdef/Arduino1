@@ -85,6 +85,7 @@ char ledSocketData[LED_SOCKET_RX_DATA_LEN] = {0};
 uint16_t ledSocketRxDataLen;
 
 HardMod::Std::LedEvent ledEvent;
+
 //-----------------------
 // echo socket
 char echoSocketRxFrameBuffer[UART_BUFF_LEN];
@@ -397,41 +398,80 @@ void loop() {
 
   // special case (does not send ack back): NOACKT234003asd
 
-  if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T805002G1 LED01T805002G0 (old: LED01T8050011  LED01T8050010)
+  // if(ledSocket.getRxData(socketRxData, &socketRxDataLen)) // LED01T805002G1 LED01T805002G0 (old: LED01T8050011  LED01T8050010)
+  // {
+  //   if(socketRxData[0] == 'G')
+  //   {
+  //     // Green Led
+  //     if(socketRxData[1] == '1')
+  //     {
+  //       //gpio_setPinHigh(GPIO_REG__PORTB, 5);
+  //       greenLed.on();
+  //     }
+  //     else if(socketRxData[1] == '0')
+  //     {
+  //       //gpio_setPinLow(GPIO_REG__PORTB, 5);
+  //       greenLed.off();
+  //     }
+  //     else{ /* do nothing */ }
+  //   }
+  //   else if(socketRxData[0] == 'R') // LED01T805002R1 LED01T805002R0
+  //   {
+  //     // Red Led
+  //     if(socketRxData[1] == '1')
+  //     {
+  //       //gpio_setPinHigh(GPIO_REG__PORTB, 4);
+  //       redLed.on();
+  //     }
+  //     else if(socketRxData[1] == '0')
+  //     {
+  //       //gpio_setPinLow(GPIO_REG__PORTB, 4);
+  //       redLed.off();
+  //     }
+  //     else{ /* do nothing */ }
+  //   }
+    
+  //   memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
+  // }
+
+  if(ledSocket.getRxEvent(ledEvent))
   {
-    if(socketRxData[0] == 'G')
+    HardMod::Std::LedFlashParams ledFlashParams;
+    HardMod::Std::LedEvent::eventTypes type = ledEvent.getType(&ledFlashParams);
+    
+    if(ledEvent.getId() == 'G')
     {
-      // Green Led
-      if(socketRxData[1] == '1')
+      if(type == HardMod::Std::LedEvent::eventTypes::On)
       {
-        //gpio_setPinHigh(GPIO_REG__PORTB, 5);
         greenLed.on();
       }
-      else if(socketRxData[1] == '0')
+      else if(type == HardMod::Std::LedEvent::eventTypes::Off)
       {
-        //gpio_setPinLow(GPIO_REG__PORTB, 5);
         greenLed.off();
       }
-      else{ /* do nothing */ }
-    }
-    else if(socketRxData[0] == 'R') // LED01T805002R1 LED01T805002R0
-    {
-      // Red Led
-      if(socketRxData[1] == '1')
+      else if(type == HardMod::Std::LedEvent::eventTypes::Flash)
       {
-        //gpio_setPinHigh(GPIO_REG__PORTB, 4);
+        greenLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
+        //greenLed.flash(3, 1, 4);
+      }
+    }
+    else if(ledEvent.getId() == 'R')
+    {
+      if(type == HardMod::Std::LedEvent::eventTypes::On)
+      {
         redLed.on();
       }
-      else if(socketRxData[1] == '0')
+      else if(type == HardMod::Std::LedEvent::eventTypes::Off)
       {
-        //gpio_setPinLow(GPIO_REG__PORTB, 4);
         redLed.off();
       }
-      else{ /* do nothing */ }
+      else if(type == HardMod::Std::LedEvent::eventTypes::Flash)
+      {
+        redLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
+      }
     }
-    
-    memset(socketRxData, 0, SOCKET_RX_DATA_LEN);
   }
+
   greenLed.run();
   redLed.run();
 

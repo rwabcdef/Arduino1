@@ -22,11 +22,11 @@ class PotEvent: public Event, public VariableIdChar
     //--------------------
     // Over-ridden base class methods
 
-    uint8_t serialise(char* str);
+    uint8_t serialise(char* str) override;
 
-    void clear();
+    void clear() override;
 
-    void copy(Event* copyEvent);
+    void copy(Event* copyEvent) override;
     //--------------------
 };
 
