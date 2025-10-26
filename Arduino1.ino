@@ -36,6 +36,8 @@ Button0: Pin 11 (PB3)
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
 uint8_t calcADCPercentage(uint16_t value);
+void pwm_init_pin10();
+void pin10PwmPercent(uint8_t percent);
 
 static uint16_t startTick;
 static bool g_ledState = false;
@@ -187,6 +189,29 @@ HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
 uint8_t count = 0;
 static char txData[4];
 
+void pwm_init_pin10()
+{
+    DDRB |= (1 << PB2);          // Set PB2 (pin 10) as output
+
+    // --- Configure Timer1 for 8-bit Fast PWM mode ---
+    // WGM10 = 1, WGM12 = 1 → Fast PWM 8-bit
+    TCCR1A = (1 << WGM10) | (1 << COM1B1);
+    TCCR1B = (1 << WGM12) | (1 << CS11);   // Prescaler = 8
+
+    OCR1B = 51; // 20% duty (51 / 255)
+}
+
+void pin10PwmPercent(uint8_t percent)
+{
+  if(percent > 100)
+  {
+    percent = 100;
+  }
+  uint8_t value = percent << 1;
+  value += percent >> 1;
+  OCR1B = value;
+}
+
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   //pinMode(7, OUTPUT);
@@ -196,6 +221,8 @@ void setup() {
   reader0.init();
 
   timer0_init();
+
+  pwm_init_pin10();
 
   swTimer_tickReset(&startTick);
   swTimer_tickReset(&buttonStartTick);
@@ -208,20 +235,21 @@ void setup() {
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__OUT);
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
-  gpio_setPinLow(GPIO_REG__PORTB, 5);
+  //gpio_setPinLow(GPIO_REG__PORTB, 5);
   //--------------------------
   // Red Led
   // Pin B4 (Pin 12)
   //gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__OUT);
   //gpio_setPinDirection(GPIO_REG__PORTB, 5, GPIO_PIN_DIRECTION__IN);
 
-  gpio_setPinLow(GPIO_REG__PORTB, 4);
+  //gpio_setPinLow(GPIO_REG__PORTB, 4);
   //--------------------------
   // Pin B4 (Pin 12)
   //gpio_setPinDirection(GPIO_REG__PORTB, 4, GPIO_PIN_DIRECTION__IN);
 
   sprintf(txData, "AAA", nullptr);
 
+  //gpio_setPinDirection(GPIO_REG__PORTB, 2, GPIO_PIN_DIRECTION__OUT);  // Pin 10 / PB2
   //--------------------------
   // HardMod::Std::HwModule::Adc_init(HardMod::Std::HwModule::PS_128);
 
@@ -244,6 +272,7 @@ void loop() {
   uint16_t txFrameCount = 0;
   //static uint8_t prevAdcPercent;
   static uint8_t previous = 150;
+  static bool testPinOn = false;  // pin PB2
   
   //cli();
   buttonA.run();
@@ -325,6 +354,8 @@ void loop() {
     // potSocket.sendData(txData, len, false);
 
     potSocket.sendEvent(potEvent, socketTxData, false);
+
+    pin10PwmPercent(potEvent.getPercent());
   }
 
   // cli();
@@ -343,27 +374,17 @@ void loop() {
   // sei();
 
   // cli();
-  // if(swTimer_tickCheckTimeout(&startTick, 1000))
+  // if(swTimer_tickCheckTimeout(&startTick, 20))
   // {
-  //   // sprintf(txData, "%03d", count++);
-  //   // buttonSocket.sendData(txData, 3, true);
-  //   //frameSent = true;
-
-  //   //toggleBuiltInLed();
-  //   if(HardMod::Std::HwModule::Adc_isConversionComplete())
+  //   if(testPinOn)
   //   {
-  //     uint8_t adcPercent = HardMod::Std::HwModule::Adc_getResultPercent();
-  //     if(adcPercent != prevAdcPercent)
-  //     {
-  //       sprintf(txData, "%03d", adcPercent);
-  //       pot0Socket.sendData(txData, 3, true);
-  //     }
-  //     prevAdcPercent = adcPercent;
-
-  //     // Pin A0 (ADC0 - Pin23)
-  //     HardMod::Std::HwModule::Adc_setInput(HardMod::Std::HwModule::ADC0);
-
-  //     HardMod::Std::HwModule::Adc_startConversion();
+  //     testPinOn = false;
+  //     gpio_setPinLow(GPIO_REG__PORTB, 2); // PB2 = pin 10
+  //   }
+  //   else
+  //   {
+  //     testPinOn = true;
+  //     gpio_setPinHigh(GPIO_REG__PORTB, 2);
   //   }
   // }
   // sei();
