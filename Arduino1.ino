@@ -23,7 +23,7 @@ Serial monitor Ack frame: TST16A452
 #include "Adc.hpp"
 #include "pot.hpp"
 #include "Led.hpp"
-#include "Registers.h"
+#include "Registers.hpp"
 
 /*
 Hardware Config
@@ -512,7 +512,7 @@ void loop() {
 
 } // end loop()
 
-bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
+bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data) // DBG01T156003RPB
 {
   // if(rxFrame.buffer[0] == 'A')
   // {
@@ -530,7 +530,7 @@ bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* d
       {
         // read port B
         memset(data, 0, 10); // clear outgoing buffer
-        *dataLen = readPortB(data);
+        *dataLen = Registers::PortB::Read(data);
         return true;
       }
     }
