@@ -24,6 +24,7 @@ Serial monitor Ack frame: TST16A452
 #include "pot.hpp"
 #include "Led.hpp"
 #include "Registers.hpp"
+#include "pwm_common.h"
 
 /*
 Hardware Config
@@ -36,8 +37,8 @@ Button0: Pin 11 (PB3)
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
 uint8_t calcADCPercentage(uint16_t value);
-void pwm_init_pin10();
-void pin10PwmPercent(uint8_t percent);
+// void pwm_init_pin10();
+// void pin10PwmPercent(uint8_t percent);
 
 static uint16_t startTick;
 static bool g_ledState = false;
@@ -189,28 +190,28 @@ HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
 uint8_t count = 0;
 static char txData[4];
 
-void pwm_init_pin10()
-{
-    DDRB |= (1 << PB2);          // Set PB2 (pin 10) as output
+// void pwm_init_pin10()
+// {
+//     DDRB |= (1 << PB2);          // Set PB2 (pin 10) as output
 
-    // --- Configure Timer1 for 8-bit Fast PWM mode ---
-    // WGM10 = 1, WGM12 = 1 → Fast PWM 8-bit
-    TCCR1A = (1 << WGM10) | (1 << COM1B1);
-    TCCR1B = (1 << WGM12) | (1 << CS11);   // Prescaler = 8
+//     // --- Configure Timer1 for 8-bit Fast PWM mode ---
+//     // WGM10 = 1, WGM12 = 1 → Fast PWM 8-bit
+//     TCCR1A = (1 << WGM10) | (1 << COM1B1);
+//     TCCR1B = (1 << WGM12) | (1 << CS11);   // Prescaler = 8
 
-    OCR1B = 51; // 20% duty (51 / 255)
-}
+//     OCR1B = 51; // 20% duty (51 / 255)
+// }
 
-void pin10PwmPercent(uint8_t percent)
-{
-  if(percent > 100)
-  {
-    percent = 100;
-  }
-  uint8_t value = percent << 1;
-  value += percent >> 1;
-  OCR1B = value;
-}
+// void pin10PwmPercent(uint8_t percent)
+// {
+//   if(percent > 100)
+//   {
+//     percent = 100;
+//   }
+//   uint8_t value = percent << 1;
+//   value += percent >> 1;
+//   OCR1B = value;
+// }
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -222,7 +223,9 @@ void setup() {
 
   timer0_init();
 
-  pwm_init_pin10();
+  //pwm_init_pin10();
+  pwm0_init();
+  pwm0_setFrequency(PWM_FREQ_1_KHZ);
 
   swTimer_tickReset(&startTick);
   swTimer_tickReset(&buttonStartTick);
@@ -355,7 +358,8 @@ void loop() {
 
     potSocket.sendEvent(potEvent, socketTxData, false);
 
-    pin10PwmPercent(potEvent.getPercent());
+    //pin10PwmPercent(potEvent.getPercent());
+    pwm0_setDutyPercent(potEvent.getPercent());
   }
 
   // cli();
