@@ -223,9 +223,22 @@ void setup() {
 
   timer0_init();
 
+  //--------------------------
+  // PWM 0
+
   //pwm_init_pin10();
-  pwm0_init();
+  pwm0_init();    // PB2 - pin 10 - PWM 0 -> L239D 1,2 EN - pin 1
   pwm0_setFrequency(PWM_FREQ_1_KHZ);
+
+  // PB1 - pin 9 -> L239D 1A - pin 2
+  gpio_setPinDirection(GPIO_REG__PORTB, 1, GPIO_PIN_DIRECTION__OUT);
+  gpio_setPinHigh(GPIO_REG__PORTB, 1);
+
+  // PB0 - pin 8 -> L239D 2A - pin 7
+  gpio_setPinDirection(GPIO_REG__PORTB, 0, GPIO_PIN_DIRECTION__OUT);
+  gpio_setPinLow(GPIO_REG__PORTB, 0);
+
+  //--------------------------
 
   swTimer_tickReset(&startTick);
   swTimer_tickReset(&buttonStartTick);
