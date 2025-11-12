@@ -1,7 +1,7 @@
 #ifndef PWM_COMMON_H
 #define PWM_COMMON_H
 
-#include <avr/io.h>
+#include "env.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -20,10 +20,14 @@ typedef enum {
 void pwm0_init(void);
 void pwm0_setFrequency(pwmFreqValues freq);
 void pwm0_setDutyPercent(uint8_t percent);
+void pwm0_disable(void);
+void pwm0_enable(void);
 
 void pwm1_init(void);
 void pwm1_setFrequency(pwmFreqValues freq);
 void pwm1_setDutyPercent(uint8_t percent);
+void pwm1_disable(void);
+void pwm1_enable(void);
 
 #ifdef __cplusplus
 }

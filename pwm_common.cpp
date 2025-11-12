@@ -45,6 +45,34 @@ void pwm0_setDutyPercent(uint8_t percent)
   OCR1B = ((uint32_t)pwm0_top_value * percent) / 100;
 }
 
+void pwm0_disable(void)
+{
+  uint8_t sreg = SREG;
+  cli(); // disable interrupts during register update
+
+  // Disconnect OC1B from Timer1 compare output
+  TCCR1A &= ~((1 << COM1B1) | (1 << COM1B0));
+
+  // Drive PB2 (pin 10) low to disable L293 output (EN=0 -> Z)
+  DDRB |= (1 << PB2);
+  PORTB &= ~(1 << PB2);
+
+  SREG = sreg; // restore interrupt state
+}
+
+void pwm0_enable(void)
+{
+  uint8_t sreg = SREG;
+  cli();
+
+  // Reconnect OC1B to Timer1 in non-inverting mode
+  TCCR1A |= (1 << COM1B1);
+  TCCR1A &= ~(1 << COM1B0);
+
+  SREG = sreg;
+}
+
+
 // ====================================================
 // === PWM1 (Timer2 / pin3 / PD3 / OC2B) ==============
 // ====================================================
@@ -107,4 +135,31 @@ void pwm1_setDutyPercent(uint8_t percent)
     percent = 100;
 
   OCR2B = ((uint16_t)(pwm1_top_value + 1) * percent) / 100;
+}
+
+void pwm1_disable(void)
+{
+  uint8_t sreg = SREG;
+  cli();
+
+  // Disconnect OC2B from Timer2 compare output
+  TCCR2A &= ~((1 << COM2B1) | (1 << COM2B0));
+
+  // Drive PD3 (pin 3) low to disable L293 output
+  DDRD |= (1 << PD3);
+  PORTD &= ~(1 << PD3);
+
+  SREG = sreg;
+}
+
+void pwm1_enable(void)
+{
+  uint8_t sreg = SREG;
+  cli();
+
+  // Reconnect OC2B to Timer2 in non-inverting mode
+  TCCR2A |= (1 << COM2B1);
+  TCCR2A &= ~(1 << COM2B0);
+
+  SREG = sreg;
 }
