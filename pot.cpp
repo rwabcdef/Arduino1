@@ -114,6 +114,10 @@ void Pot::run()
     if (current != previous)
     {
         this->percent = current;
+        if(this->percent > 1)
+        {
+            this->percent--;
+        }
     }
   }
 }

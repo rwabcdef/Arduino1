@@ -25,6 +25,7 @@ Serial monitor Ack frame: TST16A452
 #include "Led.hpp"
 #include "Registers.hpp"
 #include "pwm_common.h"
+#include "motor.hpp"
 
 /*
 Hardware Config
@@ -182,6 +183,12 @@ HardMod::Std::Button buttonA('A', GPIO_REG__PORTB, 3, false, true, 150);
 HardMod::Std::Led greenLed(GPIO_REG__PORTB, 5);
 HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
 //-----------------------
+// Motor A
+// Motor A
+HardMod::Std::Motor motorA(HardMod::Std::Motor::pwmTypes::PWM0, 
+  GPIO_REG__PORTB, 1,  // Pin 9
+  GPIO_REG__PORTB, 0,  // Pin 8
+  pwmFreqValues::PWM_FREQ_5_KHZ);
 
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
@@ -227,16 +234,16 @@ void setup() {
   // PWM 0
 
   //pwm_init_pin10();
-  pwm0_init();    // PB2 - pin 10 - PWM 0 -> L239D 1,2 EN - pin 1
-  pwm0_setFrequency(PWM_FREQ_1_KHZ);
+  // pwm0_init();    // PB2 - pin 10 - PWM 0 -> L239D 1,2 EN - pin 1
+  // pwm0_setFrequency(PWM_FREQ_1_KHZ);
 
-  // PB1 - pin 9 -> L239D 1A - pin 2
-  gpio_setPinDirection(GPIO_REG__PORTB, 1, GPIO_PIN_DIRECTION__OUT);
-  gpio_setPinHigh(GPIO_REG__PORTB, 1);
+  // // PB1 - pin 9 -> L239D 1A - pin 2
+  // gpio_setPinDirection(GPIO_REG__PORTB, 1, GPIO_PIN_DIRECTION__OUT);
+  // gpio_setPinHigh(GPIO_REG__PORTB, 1);
 
-  // PB0 - pin 8 -> L239D 2A - pin 7
-  gpio_setPinDirection(GPIO_REG__PORTB, 0, GPIO_PIN_DIRECTION__OUT);
-  gpio_setPinLow(GPIO_REG__PORTB, 0);
+  // // PB0 - pin 8 -> L239D 2A - pin 7
+  // gpio_setPinDirection(GPIO_REG__PORTB, 0, GPIO_PIN_DIRECTION__OUT);
+  // gpio_setPinLow(GPIO_REG__PORTB, 0);
 
   //--------------------------
 
@@ -372,7 +379,8 @@ void loop() {
     potSocket.sendEvent(potEvent, socketTxData, false);
 
     //pin10PwmPercent(potEvent.getPercent());
-    pwm0_setDutyPercent(potEvent.getPercent());
+    //pwm0_setDutyPercent(potEvent.getPercent());
+    motorA.setPercent(potEvent.getPercent());
   }
 
   // cli();

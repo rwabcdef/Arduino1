@@ -26,7 +26,7 @@ class Motor
       uint8_t pinBPin, pwmFreqValues frequency = PWM_FREQ_1_KHZ);
     void setPercent(uint8_t percent);
     uint8_t getPercent();
-    void setDirection(directionStates direction);
+    bool setDirection(directionStates direction);
     directionStates getDirection();
 
   protected:
@@ -42,7 +42,6 @@ class Motor
 
     void forward();
     void reverse();
-    void disable();
   
 }; // end class Motor
 
