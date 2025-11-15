@@ -39,21 +39,22 @@ bool MotorEvent::deSerialise(char* str)
       this->type = SetDirection;
       if(str[2] == MOTOREVENT__DIRECTION_FORWARD)
       {
-        this->value = MotorEvent::directionValues::Forward;
+        this->value = Motor::directionStates::Forward;
       }
       else if(str[2] == MOTOREVENT__DIRECTION_REVERSE)
       {
-        this->value = MotorEvent::directionValues::Reverse;
+        this->value = Motor::directionStates::Reverse;
       }
       else if(str[2] == MOTOREVENT__DIRECTION_DISABLED)
       {
-        this->value = MotorEvent::directionValues::Disabled;
+        this->value = Motor::directionStates::Disabled;
       }
       else
       {
         this->type = None;
         return false;
       }
+      break;
     case MOTOREVENT__SET_FREQUENCY:
       this->type = SetFrequency;
       switch(str[2])
@@ -206,6 +207,9 @@ bool Motor::setDirection(directionStates direction)
         if(this->pwm == Motor::pwmTypes::PWM0)
         {
           pwm0_enable();
+          pwm0_init();
+          pwm0_setFrequency(this->frequency);
+          //pwm0_setDutyPercent(0);
         }
         else if(this->pwm == Motor::pwmTypes::PWM1)
         {
@@ -232,6 +236,7 @@ bool Motor::setDirection(directionStates direction)
         if(this->pwm == Motor::pwmTypes::PWM0)
         {
           pwm0_enable();
+          pwm0_init();
         }
         else if(this->pwm == Motor::pwmTypes::PWM1)
         {

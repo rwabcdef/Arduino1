@@ -12,6 +12,10 @@
 #define MOTOREVENT__SET_DIRECTION 'D'
 #define MOTOREVENT__SET_FREQUENCY 'F'
 
+// Used by a socket to request all motor parameters
+// (values are returned in the ack frame, by the instant handler)
+#define MOTOREVENT__GET_ALL 'G'
+
 #define MOTOREVENT__DIRECTION_FORWARD 'F'
 #define MOTOREVENT__DIRECTION_REVERSE 'R'
 #define MOTOREVENT__DIRECTION_DISABLED 'D'
@@ -35,11 +39,11 @@ class MotorEvent: public Event, public VariableIdChar {
       SetDirection,
       SetFrequency
     };
-    enum directionValues {
-      Forward = 0,
-      Reverse,
-      Disabled
-    };
+    // enum directionValues {
+    //   Forward = 0,
+    //   Reverse,
+    //   Disabled
+    // };
 
     MotorEvent();
     eventTypes getType(uint8_t* value = nullptr);

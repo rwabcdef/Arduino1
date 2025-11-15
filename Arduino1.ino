@@ -396,9 +396,32 @@ void loop() {
     motorA.setPercent(potEvent.getPercent());
   }
 
+  // MOTORT516005AP030
+  // MOTORT523003ADR
   if(motorSocket.getRxEvent(motorEvent))
   {
     // Unfinnished
+    HardMod::Std::MotorEvent::eventTypes eventType;
+    uint8_t value;
+
+    eventType = motorEvent.getType(&value);
+    if(eventType == HardMod::Std::MotorEvent::eventTypes::SetPercent)
+    {
+      if(motorEvent.getId() == 'A')
+      {
+        //redLed.on();
+        motorA.setPercent(value);
+      }
+    }
+    else if(eventType == HardMod::Std::MotorEvent::eventTypes::SetDirection)
+    {
+      //HardMod::Std::Motor::directionStates direction = motorEvent
+      if(motorEvent.getId() == 'A')
+      {
+        //greenLed.on();
+        motorA.setDirection(value);
+      }
+    }
   }
 
   // cli();
@@ -601,7 +624,7 @@ bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* d
       }
     }
   }
-  else  // readPortB
+  else
   {
     return false;
   }
@@ -609,7 +632,15 @@ bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* d
 //-----------------------------------------------------------------------------------------------
 bool motorSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
 {
+  uint8_t index = 0;
+  if(rxFrame.buffer[index++] == 'A')
+  {
+    // motor A
+    if(rxFrame.buffer[index++] == MOTOREVENT__GET_ALL)
+    {
 
+    }
+  }
 }
 //-----------------------------------------------------------------------------------------------
 void toggleBuiltInLed()
