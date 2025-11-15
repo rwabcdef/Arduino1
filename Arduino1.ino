@@ -37,6 +37,7 @@ Button0: Pin 11 (PB3)
 
 void toggleBuiltInLed();
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
+bool motorSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data);
 uint8_t calcADCPercentage(uint16_t value);
 // void pwm_init_pin10();
 // void pin10PwmPercent(uint8_t percent);
@@ -85,9 +86,9 @@ SerLink::Frame ledSocketTxFrame(ledSocketTxFrameBuffer);
 
 SerLink::Socket ledSocket(&writer0, &reader0, "LED01", &ledSocketRxFrame, &ledSocketTxFrame);
 
-#define LED_SOCKET_RX_DATA_LEN 10
-char ledSocketData[LED_SOCKET_RX_DATA_LEN] = {0};
-uint16_t ledSocketRxDataLen;
+// #define LED_SOCKET_RX_DATA_LEN 10
+// char ledSocketData[LED_SOCKET_RX_DATA_LEN] = {0};
+// uint16_t ledSocketRxDataLen;
 
 HardMod::Std::LedEvent ledEvent;
 
@@ -184,12 +185,24 @@ HardMod::Std::Led greenLed(GPIO_REG__PORTB, 5);
 HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
 //-----------------------
 // Motor A
-// Motor A
 HardMod::Std::Motor motorA(HardMod::Std::Motor::pwmTypes::PWM0, 
   GPIO_REG__PORTB, 1,  // Pin 9
   GPIO_REG__PORTB, 0,  // Pin 8
   pwmFreqValues::PWM_FREQ_5_KHZ);
 
+//-----------------------  
+
+// MotorSocket
+char motorSocketRxFrameBuffer[UART_BUFF_LEN];
+char motorSocketTxFrameBuffer[UART_BUFF_LEN];
+
+SerLink::Frame motorSocketRxFrame(motorSocketRxFrameBuffer);
+SerLink::Frame motorSocketTxFrame(motorSocketTxFrameBuffer);
+
+SerLink::Socket motorSocket(&writer0, &reader0, "MOTOR", &motorSocketRxFrame, &motorSocketTxFrame, nullptr, nullptr, &motorSockInstantHandler);
+
+HardMod::Std::MotorEvent motorEvent;
+//-----------------------
 
 //SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, 4, "abcd");
 //static SerLink::Frame txFrame("TST16", SerLink::Frame::TYPE_TRANSMISSION, 452, txFrameBuffer, 4, "abcd");
@@ -383,6 +396,11 @@ void loop() {
     motorA.setPercent(potEvent.getPercent());
   }
 
+  if(motorSocket.getRxEvent(motorEvent))
+  {
+    // Unfinnished
+  }
+
   // cli();
   // if(swTimer_tickCheckTimeout(&startTick, 250))
   // {
@@ -551,13 +569,15 @@ void loop() {
   buttonSocket.run();
   echoSocket.run();
   potSocket.run();
+  motorSocket.run();
 
   adc.run();
   potA.run();
   
 
 } // end loop()
-
+//-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
 bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data) // DBG01T156003RPB
 {
   // if(rxFrame.buffer[0] == 'A')
@@ -586,7 +606,12 @@ bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* d
     return false;
   }
 }
+//-----------------------------------------------------------------------------------------------
+bool motorSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
+{
 
+}
+//-----------------------------------------------------------------------------------------------
 void toggleBuiltInLed()
 {
   if(g_ledState){
@@ -599,3 +624,4 @@ void toggleBuiltInLed()
     }
   g_ledState = !g_ledState;
 }
+//-----------------------------------------------------------------------------------------------

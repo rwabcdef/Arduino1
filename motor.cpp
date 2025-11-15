@@ -1,9 +1,110 @@
 
 #include "motor.hpp"
 #include "hw_gpio.h"
+#include "SerLink_Utils.hpp"
 
 namespace HardMod::Std
 {
+
+MotorEvent::MotorEvent(): Event()
+{
+  this->type = None;
+}
+
+MotorEvent::eventTypes MotorEvent::getType(uint8_t* value)
+{
+  if(value != nullptr && (this->type == SetPercent || this->type == SetDirection))
+  {
+    *value = this->value;
+  }
+  return this->type;
+}
+
+bool MotorEvent::deSerialise(char* str)
+{
+  this->clr(); // base class clr()
+
+  this->setId(str[0]);
+  this->setAction(str[1]);
+
+  switch(this->action)
+  {
+    case MOTOREVENT__SET_PERCENT:
+      this->type = SetPercent;
+      this->value = SerLink::Utils::strToUint8(&str[2], 3);
+      if(this->value > 100)
+        this->value = 100;
+      break;
+    case MOTOREVENT__SET_DIRECTION:
+      this->type = SetDirection;
+      if(str[2] == MOTOREVENT__DIRECTION_FORWARD)
+      {
+        this->value = MotorEvent::directionValues::Forward;
+      }
+      else if(str[2] == MOTOREVENT__DIRECTION_REVERSE)
+      {
+        this->value = MotorEvent::directionValues::Reverse;
+      }
+      else if(str[2] == MOTOREVENT__DIRECTION_DISABLED)
+      {
+        this->value = MotorEvent::directionValues::Disabled;
+      }
+      else
+      {
+        this->type = None;
+        return false;
+      }
+    case MOTOREVENT__SET_FREQUENCY:
+      this->type = SetFrequency;
+      switch(str[2])
+      {
+        case MOTOREVENT__FREQUENCY_500_HZ:
+          this->value = PWM_FREQ_500_HZ;
+          break;
+        case MOTOREVENT__FREQUENCY_1_KHZ:
+          this->value = PWM_FREQ_1_KHZ;
+          break;
+        case MOTOREVENT__FREQUENCY_2_KHZ:
+          this->value = PWM_FREQ_2_KHZ; 
+          break;
+        case MOTOREVENT__FREQUENCY_5_KHZ:
+          this->value = PWM_FREQ_5_KHZ;
+          break;
+        case MOTOREVENT__FREQUENCY_10_KHZ:
+          this->value = PWM_FREQ_10_KHZ;
+          break;
+        case MOTOREVENT__FREQUENCY_20_KHZ:
+          this->value = PWM_FREQ_20_KHZ;
+          break;
+        default:
+          this->type = None;
+          return false;
+      }
+      break;
+    default:
+      this->type = None;
+      return false;
+  }
+  return true;
+}
+
+void MotorEvent::clear()
+{
+  this->clr();         // base class clr()
+  this->type = None;
+  this->value = 0;
+}
+
+void MotorEvent::copy(Event* copyEvent)
+{
+  MotorEvent* copy = (MotorEvent*) copyEvent;
+  copy->setAck(this->ack);
+  copy->setId(this->getId());
+  copy->setAction(this->action);
+  copy->type = this->type;
+  copy->value = this->value;
+}
+//-----------------------------------------------------------------------------------
 
 Motor::Motor(pwmTypes pwm, uint8_t pinAPort, uint8_t pinAPin, uint8_t pinBPort,
     uint8_t pinBPin, pwmFreqValues frequency = PWM_FREQ_1_KHZ)
@@ -168,6 +269,28 @@ bool Motor::setDirection(directionStates direction)
 Motor::directionStates Motor::getDirection()
 {
   return this->direction; 
+}
+
+bool Motor::setFrequency(pwmFreqValues frequency)
+{
+  if(this->pwm == Motor::pwmTypes::PWM0)
+  {
+    pwm0_setFrequency(this->frequency);
+    this->frequency = frequency;
+    return true;
+  }
+  else if(this->pwm == Motor::pwmTypes::PWM1)
+  {
+    pwm1_setFrequency(this->frequency);
+    this->frequency = frequency;
+    return true;
+  }
+  return false;
+}
+
+pwmFreqValues Motor::getFrequency()
+{
+  return this->frequency;
 }
 
 void Motor::forward()

@@ -24,7 +24,7 @@ LedEvent::eventTypes LedEvent::getType(LedFlashParams* flashParams)
 
 bool LedEvent::deSerialise(char* str)
 {
-  this->clr(); // base class clr()
+  this->clr();  // base class clr()
 
   this->setId(str[0]);
   this->setAction(str[1]);
