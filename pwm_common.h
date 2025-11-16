@@ -17,6 +17,7 @@ typedef enum {
   PWM_FREQ_20_KHZ
 } pwmFreqValues;
 
+void pwm0_clr(void);
 void pwm0_init(void);
 void pwm0_setFrequency(pwmFreqValues freq);
 void pwm0_setDutyPercent(uint8_t percent);

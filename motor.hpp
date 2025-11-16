@@ -75,8 +75,11 @@ class Motor
       Disabled
     };
 
+    static void clr();
+
     Motor(pwmTypes pwm, uint8_t pinAPort, uint8_t pinAPin, uint8_t pinBPort,
       uint8_t pinBPin, pwmFreqValues frequency = PWM_FREQ_1_KHZ);
+    uint8_t init();
     void setPercent(uint8_t percent);
     uint8_t getPercent();
     bool setDirection(directionStates direction);

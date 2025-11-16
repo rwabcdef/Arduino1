@@ -107,37 +107,40 @@ void MotorEvent::copy(Event* copyEvent)
 }
 //-----------------------------------------------------------------------------------
 
+void Motor::clr()
+{
+  pwm0_clr();
+}
+
 Motor::Motor(pwmTypes pwm, uint8_t pinAPort, uint8_t pinAPin, uint8_t pinBPort,
     uint8_t pinBPin, pwmFreqValues frequency = PWM_FREQ_1_KHZ)
-    : pwm(pwm), frequency(frequency)
+    : pwm(pwm), pinAPort(pinAPort), pinAPin(pinAPin), pinBPort(pinBPort),
+      pinBPin(pinBPin), frequency(frequency)
 {
-  // this->pwm = pwm;
-  // this->frequency = frequency;
+}
 
-  this->pinAPort = 0; // invalid
-  this->pinAPin = 0;  // invalid
-  this->pinBPort = 0; // invalid
-  this->pinBPin = 0;  // invalid
-
-  if(pinAPort >= GPIO_REG__PORTB && pinAPort <= GPIO_REG__PORTD)
+uint8_t Motor::init()
+{
+  if(this->pinAPort > GPIO_REG__PORTD)
   {
-    this->pinAPort = pinAPort;
-    if(pinAPin <= 7)
-    {
-      this->pinAPin = pinAPin;
-      gpio_setPinDirection(this->pinAPort, this->pinAPin, GPIO_PIN_DIRECTION__OUT);
-    }
+    return 1; // invalid port
+  }
+  if(this->pinAPin > 7)
+  {
+    return 2; // invalid pin
+  }
+  if(this->pinBPort > GPIO_REG__PORTD)
+  {
+    return 3; // invalid port
+  }
+  if(this->pinBPin > 7)
+  {
+    return 4; // invalid pin
   }
 
-  if(pinBPort >= GPIO_REG__PORTB && pinBPort <= GPIO_REG__PORTD)
-  {
-    this->pinBPort = pinBPort;
-    if(pinBPin <= 7)
-    {
-      this->pinBPin = pinBPin;
-      gpio_setPinDirection(this->pinBPort, this->pinBPin, GPIO_PIN_DIRECTION__OUT);
-    }
-  }
+  gpio_setPinDirection(this->pinAPort, this->pinAPin, GPIO_PIN_DIRECTION__OUT);
+
+  gpio_setPinDirection(this->pinBPort, this->pinBPin, GPIO_PIN_DIRECTION__OUT);
     
   // Initialize the selected PWM channel
   if(this->pwm == Motor::pwmTypes::PWM0)
@@ -156,7 +159,9 @@ Motor::Motor(pwmTypes pwm, uint8_t pinAPort, uint8_t pinAPin, uint8_t pinBPort,
   this->percent = 0;
   this->direction = Motor::directionStates::Forward;
   this->forward();
+  return 0; // success
 }
+
 void Motor::setPercent(uint8_t percent)
 {
   if(percent > 100)

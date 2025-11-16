@@ -6,6 +6,17 @@
 
 static uint16_t pwm0_top_value = 1999;
 
+void pwm0_clr(void)
+{
+  // Stop Timer1
+  TCCR1A = 0;
+  TCCR1B = 0;
+
+  // Drive PB2 (pin 10) low to disable L293 output (EN=0 -> Z)
+  DDRB |= (1 << PB2);
+  PORTB &= ~(1 << PB2);
+}
+
 void pwm0_init(void)
 {
   DDRB |= (1 << PB2); // PB2 = output (pin 10)

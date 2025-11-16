@@ -4,7 +4,7 @@ Serial monitor Ack frame: TST16A452
 */
 #include "env.h"
 
-// #include <avr/io.h>
+//#include <avr/io.h>
 // #include "wiring_private.h"
 
 // #include <stdio.h>
@@ -188,7 +188,7 @@ HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
 HardMod::Std::Motor motorA(HardMod::Std::Motor::pwmTypes::PWM0, 
   GPIO_REG__PORTB, 1,  // Pin 9
   GPIO_REG__PORTB, 0,  // Pin 8
-  pwmFreqValues::PWM_FREQ_5_KHZ);
+  pwmFreqValues::PWM_FREQ_2_KHZ);
 
 //-----------------------  
 
@@ -257,6 +257,9 @@ void setup() {
   // // PB0 - pin 8 -> L239D 2A - pin 7
   // gpio_setPinDirection(GPIO_REG__PORTB, 0, GPIO_PIN_DIRECTION__OUT);
   // gpio_setPinLow(GPIO_REG__PORTB, 0);
+
+  HardMod::Std::Motor::clr();
+  motorA.init();
 
   //--------------------------
 
@@ -398,6 +401,7 @@ void loop() {
 
   // MOTORT516005AP030
   // MOTORT523003ADR
+  // MOTORT529002AG  -  Read registers
   if(motorSocket.getRxEvent(motorEvent))
   {
     // Unfinnished
@@ -633,14 +637,32 @@ bool debugSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* d
 bool motorSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* data)
 {
   uint8_t index = 0;
-  if(rxFrame.buffer[index++] == 'A')
+  if(rxFrame.buffer[index] == 'A')
   {
     // motor A
-    if(rxFrame.buffer[index++] == MOTOREVENT__GET_ALL)
+    index++;
+    if(rxFrame.buffer[index] == MOTOREVENT__GET_ALL)
     {
-
+        memset(data, 0, 10); // clear outgoing buffer
+        *dataLen = Registers::PWM0::Read(data);
+        return true;
+    }
+    else if(rxFrame.buffer[index] == 'T') 
+    {
+      // Test (i.e. debug) operations
+      index++;
+      if(rxFrame.buffer[index] == '0') // MOTORT531003AT0
+      {
+        HardMod::Std::Motor::clr();        
+      }
+      else if(rxFrame.buffer[index] == '1') // MOTORT531003AT1
+      {
+        motorA.init();
+      }
     }
   }
+
+  return false;
 }
 //-----------------------------------------------------------------------------------------------
 void toggleBuiltInLed()

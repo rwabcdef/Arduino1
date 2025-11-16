@@ -192,6 +192,19 @@ public:
       static uint8_t PIND_() { return Registers::readByte(PIND); }
     };
   };
+  // ======================================================
+  // PWM0 Registers
+  // ======================================================
+  class PWM0
+  {
+    public:
+      static uint8_t Read(char *str)
+      {
+        sprintf(str, "%02X%02X%02X%02X", TCCR1A, TCCR1B, OCR1BH, OCR1BL);
+        str[8] = '\0';
+        return 8;
+      }
+  };
 };
 
 #endif // REGISTERS_HPP
