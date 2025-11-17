@@ -2,6 +2,10 @@ import { SerialPort } from "serialport";
 import { ReadlineParser } from "@serialport/parser-readline";
 import * as readline from "readline";
 
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 class DebugPrint {
   protected debugOn: boolean = false;
   protected debugId: string = '-';
@@ -88,17 +92,12 @@ class Frame {
 
   // ✅ Equivalent of Python's toString()
   public toString(): string {
-    if (this.type === Frame.TYPE_ACK) {
-      return `${this.protocol}${this.type}${this.rollCode}${this.dataLen}\n`;
+    const rollCodeStr = String(this.rollCode).padStart(Frame.LEN_ROLLCODE, '0');
+    const dataLenStr = String(this.dataLen).padStart(Frame.LEN_DATALEN, '0');
+    if (this.data == undefined || this.data?.length == 0) {
+      return `${this.protocol}${this.type}${rollCodeStr}${dataLenStr}\n`;
     } else {
-      const rollCodeStr = String(this.rollCode).padStart(Frame.LEN_ROLLCODE, '0');
-
-      const dataLenStr = String(this.dataLen).padStart(Frame.LEN_DATALEN, '0');
-      if (this.data == undefined || this.data?.length == 0) {
-        return `${this.protocol}${this.type}${rollCodeStr}${dataLenStr}\n`;
-      } else {
-        return `${this.protocol}${this.type}${rollCodeStr}${dataLenStr}${this.data}\n`;
-      }
+      return `${this.protocol}${this.type}${rollCodeStr}${dataLenStr}${this.data}\n`;
     }
   }
 }
@@ -160,6 +159,28 @@ class Port extends DebugPrint {
     }
   }
 
+  public async writeAsync(data: string, retryDelay: number = 50): Promise<void> {
+    const line = data.endsWith('\n') ? data : data + '\n';
+
+    while (this.busy) {
+      await delay(retryDelay); // wait until port is free
+    }
+
+    return new Promise((resolve, reject) => {
+      this.busy = true;
+      this.port?.write(line, (err) => {
+        this.busy = false;
+        if (err) {
+          console.error('Error writing to port:', err.message);
+          reject(err);
+          return;
+        }
+        this.dprint(`Message written successfully: ${line.trim()}`);
+        resolve();
+      });
+    });
+  }
+
   public isBusy(): boolean { return this.busy; }
 
   // Listen for incoming data
@@ -170,6 +191,7 @@ class Port extends DebugPrint {
 
 export class Writer extends DebugPrint {
   private port: Port | null = null;
+  private ackFrame: Frame | null = null;
 
   constructor(debugOn: boolean = false, debugId: string = 'WTR'){
     super(debugOn, debugId);
@@ -178,31 +200,96 @@ export class Writer extends DebugPrint {
   public init(port:Port): void {
     this.port = port;
   }
+
+  public async sendFrameAsync(txFrame: Frame):Promise<number> {
+    this.dprint(`Sending frame: ${txFrame.toString().trim()}`);
+    if (this.port) {
+      await this.port.writeAsync(txFrame.toString());
+
+      // Wait for ACK if frame type is TRANSMISSION
+      if (txFrame.getType() == Frame.TYPE_TRANSMISSION) {
+        this.dprint(`Waiting for ACK for roll code: ${txFrame.getRollCode()}`);
+        // Simple wait loop for ACK - in real implementation, consider timeout and retries
+        var count = 0;
+        while (this.ackFrame == null || this.ackFrame.getRollCode() != txFrame.getRollCode()) {
+          await delay(10); // wait for ACK
+          count += 1;
+          if (count > 100) { // timeout after 1 second
+            this.dprint(`Timeout waiting for ACK for roll code: ${txFrame.getRollCode()}`);
+            return 1; // timeout error code
+          }
+        }
+        this.dprint(`Received ACK for roll code: ${txFrame.getRollCode()}`);
+        this.ackFrame = null; // reset for next frame
+        return 0; // success
+      }
+      else if (txFrame.getType() == Frame.TYPE_UNIDIRECTION) {
+        // No ACK expected for UNIDIRECTION frames
+        return 0; // success
+      }
+      else {
+        this.dprint(`Unknown frame type: ${txFrame.getType()}`);
+        return 2; // unknown frame type error code
+      }
+    }
+    return 3; // port not initialized error code
+  }
+
+  public onReceiveAck(ackFrame: Frame): void {
+    this.dprint(`ACK frame received: ${ackFrame.toString().trim()}`);
+    this.ackFrame = ackFrame;
+  }
 }
 
 export class Reader extends DebugPrint {
   private port: Port | null = null;
   private writer: Writer | null = null;
+  private parent: SerLink | null = null;
 
   constructor(debugOn: boolean = false, debugId: string = 'RDR'){    
     super(debugOn, debugId);
   }
 
-  public init(port:Port, writer: Writer): void {
+  public init(port:Port, writer: Writer, parent: SerLink): void {
     this.port = port;
     this.writer = writer;
+    this.parent = parent;
     this.port.setOnReceive(this.onReceiveFrame.bind(this));
   }
 
-  public onReceiveFrame(line: string):void {
+  public async onReceiveFrame(line: string):Promise<void> {
     this.dprint(`Received line: ${line}`);
     const rxFrame: Frame = Frame.fromString(line)
 
     if(rxFrame.getType() == Frame.TYPE_TRANSMISSION){
-      //      
+      // A frame of type TRANSMISSION received - send ACK
+
       const ackFrame = new Frame(rxFrame.getProtocol(), Frame.TYPE_ACK, rxFrame.getRollCode(), Frame.ACK_OK);
 
       // to do - write ack frame
+      if (this.port) {
+        await this.port.writeAsync(ackFrame.toString());
+        this.dprint(`ACK frame sent: ${ackFrame.toString().trim()}`);
+      }
+      // Notify parent SerLink
+      if (this.parent) {
+        this.parent.onReceiveFrame(rxFrame);
+      }
+    }
+    else if(rxFrame.getType() == Frame.TYPE_UNIDIRECTION){
+      // A frame of type UNIDIRECTION received - notify parent SerLink
+      if (this.parent) {
+        this.parent.onReceiveFrame(rxFrame);
+      } 
+    }
+    else if(rxFrame.getType() == Frame.TYPE_ACK){
+      // A frame of type ACK received - notify Writer
+      if (this.writer) {
+        this.writer.onReceiveAck(rxFrame);
+      }
+    }
+    else{
+      this.dprint(`Unknown frame type received: ${rxFrame.getType()}`);
     }
   }
 }
@@ -233,11 +320,16 @@ export class SerLink extends DebugPrint {
     this.writer = new Writer(this.debugOn);
     this.writer.init(this.port);
     this.reader = new Reader(this.debugOn);
-    this.reader.init(this.port, this.writer)
+    this.reader.init(this.port, this.writer, this)
 
     this.port.setOnOpen(() => {
       this.dprint(`Serial port ${portName} opened at ${baudRate} baud.`);
     });
+  }
+
+  public onReceiveFrame(rxFrame: Frame): void {
+    this.dprint(`SerLink received frame: ${rxFrame.toString().trim()}`);
+    // Handle the received frame as needed
   }
 }
 

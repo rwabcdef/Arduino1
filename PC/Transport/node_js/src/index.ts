@@ -5,6 +5,8 @@ npm install --save-dev typescript @types/node
 npx tsc --init
 npm install --save-dev ts-node
 
+cd PC/Transport/node_js/
+
 npx tsc
 node dist/index.js
 
