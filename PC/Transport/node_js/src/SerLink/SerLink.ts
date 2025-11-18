@@ -2,6 +2,12 @@ import { SerialPort } from "serialport";
 import { ReadlineParser } from "@serialport/parser-readline";
 import * as readline from "readline";
 
+// async sendFrameAsync(txFrame: Frame):Promise<number>
+interface ISerLink {
+  sendFrameAsync(txFrame: Frame):Promise<number>;
+}
+
+// Utility function to introduce delay
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -98,6 +104,46 @@ class Frame {
       return `${this.protocol}${this.type}${rollCodeStr}${dataLenStr}\n`;
     } else {
       return `${this.protocol}${this.type}${rollCodeStr}${dataLenStr}${this.data}\n`;
+    }
+  }
+}
+
+export class Socket extends DebugPrint {
+  private parent: ISerLink;
+  private protocol: string;
+  private rollCode: number;
+  private onReceive: ((frame: Frame) => void) | null = null; // on receive callback
+
+  constructor(parent: ISerLink, protocol: string, initialRollCode: number = 0, onReceive: ((frame: Frame) => void) | null = null,
+  debugOn: boolean = false, debugId: string = 'SCK'){
+    super(debugOn, debugId);
+    this.parent = parent;
+    this.protocol = protocol;
+    this.rollCode = initialRollCode;
+    this.onReceive = onReceive;
+  }
+
+  public async sendTransmissionAsync(data: string, ack: boolean):Promise<number> {
+    const frameType = ack ? Frame.TYPE_TRANSMISSION : Frame.TYPE_UNIDIRECTION;
+    const dataLen = data.length;
+    const txFrame = new Frame(this.protocol, frameType, this.rollCode, dataLen, data);
+
+    this.dprint(`Socket ${this.protocol}: sending frame: ${txFrame.toString().trim()}`);
+
+    const result = await this.parent.sendFrameAsync(txFrame);
+
+    // Increment roll code for next transmission
+    this.rollCode += 1;
+    if (this.rollCode > Frame.maxRollCode()) {
+      this.rollCode = 0;
+    }
+
+    return result;
+  }
+
+  public handleReceiveFrame(rxFrame: Frame): void {
+    if (this.onReceive) {
+      this.onReceive(rxFrame);
     }
   }
 }
@@ -294,10 +340,11 @@ export class Reader extends DebugPrint {
   }
 }
 
-export class SerLink extends DebugPrint {
+export class SerLink extends DebugPrint implements ISerLink {
   private port: Port | null = null;
   private reader: Reader | null = null;
   private writer: Writer | null = null;
+  private sockets: Map<string, Socket> = new Map<string, Socket>();
 
   constructor(debugOn: boolean = false, debugId: string = 'SLK'){
 
@@ -327,9 +374,33 @@ export class SerLink extends DebugPrint {
     });
   }
 
+  // Used by Reader to notify SerLink of received frames
   public onReceiveFrame(rxFrame: Frame): void {
     this.dprint(`SerLink received frame: ${rxFrame.toString().trim()}`);
-    // Handle the received frame as needed
+    // find the appropriate socket and notify it
+    const protocol = rxFrame.getProtocol();
+    const socket = this.sockets.get(protocol);
+    if (socket) {
+      socket.handleReceiveFrame(rxFrame);
+    } else {
+      this.dprint(`No socket found for protocol: ${protocol}`);
+    }
+  }
+
+  // Used by Sockets to send frames via Writer
+  public async sendFrameAsync(txFrame: Frame):Promise<number> {
+    if (this.writer) {
+      return await this.writer.sendFrameAsync(txFrame);
+    }
+    return 1; // writer not initialized error code
+  }
+
+  // Acquire a socket for a specific protocol
+  public acquireSocket(protocol: string, initialRollCode: number = 0, onReceive: ((frame: Frame) => void) | null = null,
+  debugOn: boolean = false, debugId: string = 'SCK'): Socket {
+    const socket = new Socket(this, protocol, initialRollCode, onReceive, debugOn, debugId);
+    this.sockets.set(protocol, socket);
+    return socket;
   }
 }
 
