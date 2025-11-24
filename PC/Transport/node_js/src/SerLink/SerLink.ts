@@ -4,13 +4,61 @@ import * as readline from "readline";
 
 // async sendFrameAsync(txFrame: Frame):Promise<number>
 interface ISerLink {
-  sendFrameAsync(txFrame: Frame):Promise<number>;
+  sendFrame(txFrame: Frame):Promise<number>;
 }
 
 // Utility function to introduce delay
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export type lineHandler = (line: string) => void;
+
+type lineHandlerId = {
+  handler: lineHandler;
+  id: number;
+}
+
+export class App {
+  constructor() { }
+  static Console = class  {
+    constructor() { }
+    static CLI = class {
+      private rl: readline.Interface;
+      private lineHandlers: lineHandlerId[] = [];
+      private nextId = 1; 
+
+      constructor() {
+        this.rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+
+        this.rl.on("line", (line) => {
+          console.log("User typed:", line);
+          this.lineHandlers.forEach(handler => handler.handler(line));
+        });
+      }
+
+      public addLineHandler(handler: lineHandler): number {
+        const id = this.nextId++;   // generate unique ID
+        this.lineHandlers.push({ handler, id });
+        return id;
+      }
+
+      public removeLineHandler(id: number): boolean {
+        const index = this.lineHandlers.findIndex(h => h.id === id);
+        if (index === -1) return false;
+        this.lineHandlers.splice(index, 1);
+        return true;
+      }
+
+      public close(): void {
+        this.rl.close();
+      }
+    }
+  };
+};
 
 class DebugPrint {
   protected debugOn: boolean = false;
@@ -27,7 +75,7 @@ class DebugPrint {
   }
 }
 
-class Frame {
+export class Frame {
   static TYPE_TRANSMISSION = 'T';
   static TYPE_UNIDIRECTION = 'U';
   static TYPE_ACK = 'A';
@@ -123,14 +171,14 @@ export class Socket extends DebugPrint {
     this.onReceive = onReceive;
   }
 
-  public async sendTransmissionAsync(data: string, ack: boolean):Promise<number> {
+  public async sendData(data: string, ack: boolean):Promise<number> {
     const frameType = ack ? Frame.TYPE_TRANSMISSION : Frame.TYPE_UNIDIRECTION;
     const dataLen = data.length;
     const txFrame = new Frame(this.protocol, frameType, this.rollCode, dataLen, data);
 
     this.dprint(`Socket ${this.protocol}: sending frame: ${txFrame.toString().trim()}`);
 
-    const result = await this.parent.sendFrameAsync(txFrame);
+    const result = await this.parent.sendFrame(txFrame);
 
     // Increment roll code for next transmission
     this.rollCode += 1;
@@ -349,16 +397,6 @@ export class SerLink extends DebugPrint implements ISerLink {
   constructor(debugOn: boolean = false, debugId: string = 'SLK'){
 
     super(debugOn, debugId);
-    
-    
-
-    
-
-    // Here you would set up the data listener and call reader.onReceiveFrame
-    // For example:
-    // this.port.onData((data: string) => {
-    //   this.reader.onReceiveFrame(data);
-    // });
   }
 
   public init(portName: string, baudRate: number): void {
@@ -388,7 +426,7 @@ export class SerLink extends DebugPrint implements ISerLink {
   }
 
   // Used by Sockets to send frames via Writer
-  public async sendFrameAsync(txFrame: Frame):Promise<number> {
+  public async sendFrame(txFrame: Frame):Promise<number> {
     if (this.writer) {
       return await this.writer.sendFrameAsync(txFrame);
     }
@@ -397,7 +435,11 @@ export class SerLink extends DebugPrint implements ISerLink {
 
   // Acquire a socket for a specific protocol
   public acquireSocket(protocol: string, initialRollCode: number = 0, onReceive: ((frame: Frame) => void) | null = null,
-  debugOn: boolean = false, debugId: string = 'SCK'): Socket {
+  debugOn: boolean = false, debugId: string = 'SCK'): Socket | null {
+    const existingSocket = this.sockets.get(protocol);
+    if (existingSocket) {
+      return null;
+    }
     const socket = new Socket(this, protocol, initialRollCode, onReceive, debugOn, debugId);
     this.sockets.set(protocol, socket);
     return socket;
