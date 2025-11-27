@@ -177,12 +177,13 @@ uint16_t socketRxDataLen;
 HardMod::Std::ButtonEvent buttonAEvent; //, button0EventExt;
 
 // Button: Pin B3 (Pin 11)
-HardMod::Std::Button buttonA('A', GPIO_REG__PORTB, 3, false, true, 150);
+HardMod::Std::Button buttonA('A', GPIO_REG__PORTD, 7, false, true, 150);
 
 //-----------------------
 
-HardMod::Std::Led greenLed(GPIO_REG__PORTB, 5);
-HardMod::Std::Led redLed(GPIO_REG__PORTB, 4);
+HardMod::Std::Led greenLed(GPIO_REG__PORTB, 5); // pin 13
+HardMod::Std::Led yellowLed(GPIO_REG__PORTB, 4);// pin 12
+HardMod::Std::Led redLed(GPIO_REG__PORTB, 3);   // pin 11
 //-----------------------
 // Motor A
 HardMod::Std::Motor motorA(HardMod::Std::Motor::pwmTypes::PWM0, 
@@ -551,6 +552,21 @@ void loop() {
         //greenLed.flash(3, 1, 4);
       }
     }
+    else if(ledEvent.getId() == 'Y')
+    {
+      if(type == HardMod::Std::LedEvent::eventTypes::On)
+      {
+        yellowLed.on();
+      }
+      else if(type == HardMod::Std::LedEvent::eventTypes::Off)
+      {
+        yellowLed.off();
+      }
+      else if(type == HardMod::Std::LedEvent::eventTypes::Flash)
+      {
+        yellowLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
+      }
+    }
     else if(ledEvent.getId() == 'R')
     {
       if(type == HardMod::Std::LedEvent::eventTypes::On)
@@ -569,6 +585,7 @@ void loop() {
   }
 
   greenLed.run();
+  yellowLed.run();
   redLed.run();
 
 
