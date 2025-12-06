@@ -22,7 +22,8 @@ import * as readline from "readline";
 
 
 // Adjust this to match your device
-const portName = "/dev/ttyACM0"; // or "/dev/ttyUSB0" on Linux/macOS , COM3
+//const portName = "/dev/ttyACM0"; // or "/dev/ttyUSB0" on Linux/macOS , COM3
+const portName = "/dev/ttyUSB0";
 const baudRate = 19200;
 
 const serLink = new SerLink(true);
