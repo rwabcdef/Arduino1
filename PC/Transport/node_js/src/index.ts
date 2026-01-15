@@ -39,31 +39,94 @@ const buttonSocket = serLink.acquireSocket("BUT01", 123, onButtonReceive);
 
 const cli = new App.Console.CLI();
 
+// const kbHandler = (line: string) => {
+//   const trimmedLine = line.trim();
+//   if (trimmedLine === "q") {
+//     console.log("Exiting...");
+//     cli.close();
+//     process.exit(0);
+//   }
+//   else if (trimmedLine === "lg1") {
+//     const frame = new Frame("LED01", Frame.TYPE_TRANSMISSION, 67, 2, "G1");
+//     //serLink.sendFrame(frame).then(() => {
+//     ledSocket?.sendData("G1", true).then(() => {
+//       console.log("Sent LG1 command");
+//     }).catch((err) => {
+//       console.error("Error sending LG1 command:", err);
+//     });
+//   }
+//   else if (trimmedLine === "lg0") {
+//     const frame = new Frame("LED01", Frame.TYPE_TRANSMISSION, 67, 2, "G0");
+//     //serLink.sendFrame(frame).then(() => {
+//     ledSocket?.sendData("G0", true).then(() => {
+//       console.log("Sent LG0 command");
+//     }).catch((err) => {
+//       console.error("Error sending LG0 command:", err);
+//     });
+//   }
+// }
+
 const kbHandler = (line: string) => {
   const trimmedLine = line.trim();
+
   if (trimmedLine === "q") {
     console.log("Exiting...");
     cli.close();
     process.exit(0);
+    return;
   }
-  else if (trimmedLine === "lg1") {
-    const frame = new Frame("LED01", Frame.TYPE_TRANSMISSION, 67, 2, "G1");
-    //serLink.sendFrame(frame).then(() => {
-    ledSocket?.sendData("G1", true).then(() => {
-      console.log("Sent LG1 command");
-    }).catch((err) => {
-      console.error("Error sending LG1 command:", err);
-    });
+
+  if (trimmedLine.startsWith("l")) {
+    sendLedCmd(trimmedLine);
+    return;
   }
-  else if (trimmedLine === "lg0") {
-    const frame = new Frame("LED01", Frame.TYPE_TRANSMISSION, 67, 2, "G0");
-    //serLink.sendFrame(frame).then(() => {
-    ledSocket?.sendData("G0", true).then(() => {
-      console.log("Sent LG0 command");
-    }).catch((err) => {
-      console.error("Error sending LG0 command:", err);
-    });
-  }
-}
+
+  console.log("Unknown command:", trimmedLine);
+};
+
 
 cli.addLineHandler(kbHandler);
+
+function sendLedCmd(input: string) {
+  const trimmed = input.trim();
+
+  // lg0, lg1, lr0, lr1 ...
+  let match = trimmed.match(/^l([a-zA-Z])([01])$/);
+  if (match) {
+    const led = match[1].toUpperCase();
+    const state = match[2];
+
+    const payload = `${led}${state}`;
+
+    ledSocket?.sendData(payload, true)
+      .then(() => console.log(`Sent ${payload}`))
+      .catch(err => console.error("LED send error:", err));
+
+    return;
+  }
+
+  // lgf,5,4,8  |  lrf,3,7,12 ...
+  match = trimmed.match(/^l([a-zA-Z])f,(\d+),(\d+),(\d+)$/);
+  if (match) {
+    const led = match[1].toUpperCase();
+    const numFlashes = Number(match[2]);
+    const onPeriods = Number(match[3]);
+    const offPeriods = Number(match[4]);
+
+    const pad2 = (n: number) => n.toString().padStart(2, "0");
+
+    const payload =
+      `${led}F` +
+      pad2(numFlashes) +
+      pad2(onPeriods) +
+      pad2(offPeriods);
+
+    ledSocket?.sendData(payload, true)
+      .then(() => console.log(`Sent ${payload}`))
+      .catch(err => console.error("LED send error:", err));
+
+    return;
+  }
+
+  console.error("Invalid LED command:", input);
+}
