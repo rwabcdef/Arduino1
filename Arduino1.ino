@@ -563,6 +563,14 @@ void loop() {
         greenLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
         //greenLed.flash(3, 1, 4);
       }
+      else if(type == HardMod::Std::LedEvent::eventTypes::FlashEndEnable)
+      {
+        greenLed.setFlashEndEventEnabled(true);
+      }
+      else if(type == HardMod::Std::LedEvent::eventTypes::FlashEndDisable)
+      {
+        greenLed.setFlashEndEventEnabled(false);
+      }
     }
     else if(ledEvent.getId() == 'Y')
     {

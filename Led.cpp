@@ -43,6 +43,12 @@ bool LedEvent::deSerialise(char* str)
       this->onPeriods = SerLink::Utils::strToUint8(&str[4], 2);
       this->offPeriods = SerLink::Utils::strToUint8(&str[6], 2);
       break;
+    case LEDEVENT__FLASH_SET_END_EVENT:
+      this->type = FlashEndEnable;
+      break;
+    case LEDEVENT__FLASH_CLR_END_EVENT:
+      this->type = FlashEndDisable;
+      break;
     default:
       this->type = None;
       return false;

@@ -12,6 +12,8 @@
 #define LEDEVENT__ON '1' // input event - led on
 #define LEDEVENT__OFF '0' // input event - led off
 #define LEDEVENT__FLASH 'F' // input event - led flash
+#define LEDEVENT__FLASH_SET_END_EVENT 'S' // input event - set (i.e. enable) flash end event
+#define LEDEVENT__FLASH_CLR_END_EVENT 'C' // input event - clear (i.e. disable) flash end event
 #define LEDEVENT__FLASH_END 'E' // output event - indicates end of flash sequence
 
 namespace HardMod::Std
@@ -27,11 +29,14 @@ class LedFlashParams{
 class LedEvent: public Event, public VariableIdChar {
   
   public:
+    // Input event types
     enum eventTypes {
       None = 0,
       On,
       Off,
-      Flash
+      Flash,
+      FlashEndEnable,
+      FlashEndDisable
     };
 
     LedEvent();
