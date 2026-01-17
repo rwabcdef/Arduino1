@@ -50,6 +50,16 @@ bool LedEvent::deSerialise(char* str)
   return true;
 }
 
+uint8_t LedEvent::serialise(char* str)
+{
+  uint8_t index = 0;
+  
+  str[index++] = this->getId();
+  str[index++] = this->action;
+
+  return index;
+}
+
 void LedEvent::clear()
 {
   this->clr();         // base class clr()
@@ -77,11 +87,13 @@ void LedEvent::copy(Event* copyEvent)
 #define STATE_FLASH_ON 2
 #define STATE_FLASH_OFF 3
 
-Led::Led(int8_t port, uint8_t pin)
-: port(port), pin(pin), numFlashes(0), onPeriods(0), offPeriods(0)
+Led::Led(char id, uint8_t port, uint8_t pin, bool flashEndEventEnabled)
+: FixedIdChar(id), port(port), pin(pin), flashEndEventEnabled(flashEndEventEnabled),
+  numFlashes(0), onPeriods(0), offPeriods(0)
 {
   this->type = LedEvent::None;
   this->currentState = STATE_OFF;
+  this->flashEndFlag = false;
   gpio_setPinDirection(this->port, this->pin, GPIO_PIN_DIRECTION__OUT);
   swTimer_tickReset(&this->startTick);
 }
@@ -104,6 +116,36 @@ void Led::flash(uint8_t numFlashes, uint8_t onPeriods, uint8_t offPeriods)
   this->onPeriods = onPeriods;
   this->offPeriods = offPeriods;
   //swTimer_tickReset(&this->startTick);
+}
+
+void Led::setFlashEndEventEnabled(bool enabled)
+{
+  this->flashEndEventEnabled = enabled;
+}
+
+bool Led::getFlashEnd()
+{
+  if(this->flashEndFlag)
+  {
+    this->flashEndFlag = false;
+    return true;
+  }
+  return false;
+}
+
+bool Led::getEvent(LedEvent* event)
+{
+  if(this->flashEndFlag)
+  {
+    this->flashEndFlag = false;
+    if(event != nullptr)
+    {
+      event->setId(this->getId());
+      event->setAction(LEDEVENT__FLASH_END);
+    }
+    return true;
+  }
+  return false;
 }
 
 void Led::run()
@@ -187,7 +229,14 @@ uint8_t Led::flashOffState(){
     }
     if(this->flashCount >= this->numFlashes)
     {
+      // End of flash sequence
       gpio_setPinLow(this->port, this->pin);
+
+      if(this->flashEndEventEnabled)
+      {
+        this->flashEndFlag = true;
+      }
+
       return STATE_OFF;
     }
     else

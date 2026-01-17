@@ -9,9 +9,10 @@
 
 #define LED_PERIOD_mS 250
 
-#define LEDEVENT__ON '1'
-#define LEDEVENT__OFF '0'
-#define LEDEVENT__FLASH 'F'
+#define LEDEVENT__ON '1' // input event - led on
+#define LEDEVENT__OFF '0' // input event - led off
+#define LEDEVENT__FLASH 'F' // input event - led flash
+#define LEDEVENT__FLASH_END 'E' // output event - indicates end of flash sequence
 
 namespace HardMod::Std
 {
@@ -41,6 +42,8 @@ class LedEvent: public Event, public VariableIdChar {
 
     bool deSerialise(char* str) override;
 
+    uint8_t serialise(char* str) override;
+
     void clear() override;
 
     void copy(Event* copyEvent) override;
@@ -52,14 +55,24 @@ class LedEvent: public Event, public VariableIdChar {
     uint8_t offPeriods;
 };
 
-class Led : public StateMachine {
+class Led : public StateMachine, public FixedIdChar {
   
   public:
-    Led(int8_t port, uint8_t pin);
+    Led(char id, uint8_t port, uint8_t pin, bool flashEndEventEnabled = false);
     void on();
     void off();
     void flash(uint8_t numFlashes, uint8_t onPeriods, uint8_t offPeriods);
     void run();
+    void setFlashEndEventEnabled(bool enabled);
+
+    //---------------------------------------------------
+    // Basic (flag) interface
+    bool getFlashEnd();
+
+    //---------------------------------------------------
+    // Event object interface
+    bool getEvent(LedEvent* event = nullptr);
+    //---------------------------------------------------
 
   protected:
     uint8_t port;
@@ -71,6 +84,8 @@ class Led : public StateMachine {
     uint8_t onPeriods;
     uint8_t offPeriods;
     uint16_t startTick;
+    bool flashEndFlag;
+    bool flashEndEventEnabled;
 
     uint8_t onState();
     uint8_t offState();

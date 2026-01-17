@@ -84,7 +84,19 @@ char ledSocketTxFrameBuffer[UART_BUFF_LEN];
 SerLink::Frame ledSocketRxFrame(ledSocketRxFrameBuffer);
 SerLink::Frame ledSocketTxFrame(ledSocketTxFrameBuffer);
 
-SerLink::Socket ledSocket(&writer0, &reader0, "LED01", &ledSocketRxFrame, &ledSocketTxFrame);
+// LedEvents for EventQueue for ledSocket
+HardMod::Std::LedEvent ldEv0, ldEv1, ldEv2;
+HardMod::Std::LedEvent* ldEv[3] = {&ldEv0, &ldEv1, &ldEv2};
+
+// EventQueue for ledSocket
+HardMod::EventQueue ldEvQueue(ldEv, 3);
+
+// General purpose LedEvent for ledSocket
+HardMod::Std::LedEvent ledSockEvent;
+
+SerLink::Socket ledSocket(&writer0, &reader0, "LED01", &ledSocketRxFrame, &ledSocketTxFrame, &ledSockEvent, &ldEvQueue);
+
+
 
 // #define LED_SOCKET_RX_DATA_LEN 10
 // char ledSocketData[LED_SOCKET_RX_DATA_LEN] = {0};
@@ -181,9 +193,9 @@ HardMod::Std::Button buttonA('A', GPIO_REG__PORTD, 7, false, true, 150);
 
 //-----------------------
 
-HardMod::Std::Led greenLed(GPIO_REG__PORTB, 5); // pin 13
-HardMod::Std::Led yellowLed(GPIO_REG__PORTB, 4);// pin 12
-HardMod::Std::Led redLed(GPIO_REG__PORTB, 3);   // pin 11
+HardMod::Std::Led greenLed('G', GPIO_REG__PORTB, 5); // pin 13
+HardMod::Std::Led yellowLed('Y', GPIO_REG__PORTB, 4, true);// pin 12
+HardMod::Std::Led redLed('R', GPIO_REG__PORTB, 3);   // pin 11
 //-----------------------
 // Motor A
 HardMod::Std::Motor motorA(HardMod::Std::Motor::pwmTypes::PWM0, 
@@ -584,6 +596,18 @@ void loop() {
     }
   }
 
+  // if(yellowLed.getFlashEnd())
+  // {
+  //   strncpy(socketTxData, "YE\0", 3);
+  //   ledSocket.sendData(socketTxData, 2, true);
+  // }
+
+// Check for flash end events
+  if(yellowLed.getEvent(&ledEvent))
+  {
+    ledSocket.sendEvent(ledEvent, socketTxData, true);
+  }
+
   greenLed.run();
   yellowLed.run();
   redLed.run();
@@ -614,6 +638,7 @@ void loop() {
   echoSocket.run();
   potSocket.run();
   motorSocket.run();
+  ledSocket.run();
 
   adc.run();
   potA.run();
