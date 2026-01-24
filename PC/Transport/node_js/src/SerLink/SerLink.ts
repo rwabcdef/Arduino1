@@ -19,6 +19,59 @@ type lineHandlerId = {
   id: number;
 }
 
+export class StateFunction {
+  private stateMachine: StateMachine | null;
+
+  constructor(stateMachine: StateMachine) {
+    this.stateMachine = stateMachine;
+  }
+
+  public getStateMachine(){ return this.stateMachine; }
+
+  public onEnter(): void {}
+  public onExit(): void {}
+  public handleInput: lineHandler = (line: string): void => {}
+}
+
+export class StateMachine {
+  private state: string;
+  private functions: Map<string, StateFunction> = new Map<string, StateFunction>();
+  constructor() {
+    this.state = "";
+  }
+
+  public addFunction(key: string, func: StateFunction): void {
+    this.functions.set(key, func);
+  }
+
+  public start(startState: string){
+    this.state = startState;
+    const func = this.functions.get(this.state);
+    if(func){
+      func.onEnter();
+    }
+  }
+
+  public handleInput(line: string) {
+    const func = this.functions.get(this.state);
+    if(func){
+      func.handleInput(line);
+    }
+  }
+
+  public changeState(newState: string) {
+    const func = this.functions.get(this.state);
+    if(func){
+      func.onExit();
+    }
+    const newFunc = this.functions.get(newState);
+    if(newFunc){
+      this.state = newState;
+      newFunc.onEnter();
+    }
+  }
+}
+
 export class App {
   constructor() { }
   static Console = class  {

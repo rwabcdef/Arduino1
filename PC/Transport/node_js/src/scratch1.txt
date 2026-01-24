@@ -78,3 +78,125 @@ rl.on("SIGINT", () => {
   rl.close();
   process.exit(0);
 });
+//--------------------------------------------------------------------------
+
+export class StateFunction {
+  private stateMachine: StateMachine | null;
+
+  constructor(stateMachine: StateMachine) {
+    this.stateMachine = stateMachine;
+  }
+
+  public getStateMachine(){ return this.stateMachine; }
+
+  public onEnter(): void {}
+  public onExit(): void {}
+  public handleInput: lineHandler = (line: string): void => {}
+}
+
+export class StateMachine {
+  private state: string;
+  private functions: Map<string, StateFunction> = new Map<string, StateFunction>();
+  constructor() {
+    this.state = "";
+  }
+
+  public addFunction(key: string, func: StateFunction): void {
+    this.functions.set(key, func);
+  }
+
+  public start(startState: string){
+    this.state = startState;
+    const func = this.functions.get(this.state);
+    if(func){
+      func.onEnter();
+    }
+  }
+
+  public handleInput(line: string) {
+    const func = this.functions.get(this.state);
+    if(func){
+      func.handleInput(line);
+    }
+  }
+
+  public changeState(newState: string) {
+    const func = this.functions.get(this.state);
+    if(func){
+      func.onExit();
+    }
+    const newFunc = this.functions.get(newState);
+    if(newFunc){
+      this.state = newState;
+      newFunc.onEnter();
+    }
+  }
+}
+
+const sf1 = (): void => {
+  // const sf = StateFunction.create();
+  // sf();
+  const INIT = "INIT";
+  const PROCESS = "PROCESS";
+  const DELAY = "DELAY";
+  const DONE = "DONE";
+
+  const stateMachine = new StateMachine();
+  const init = new StateFunction(stateMachine);
+  init.onEnter = function (): void {
+    console.log('init.onEnter')
+  }
+  init.handleInput = function (line: string): void {
+    console.log('init.handleInput: ' + line); 
+    if(line.trim() == 'pr'){
+      this.getStateMachine()?.changeState(PROCESS);      
+    }
+  }
+  init.onExit = function (): void { console.log('init.onExit') }
+
+  const process = new StateFunction(stateMachine);
+  process.onEnter = function (): void {
+    console.log('process.onEnter')
+  }
+  process.handleInput = function (line: string): void {
+    console.log('process.handleInput: ' + line); 
+    if(line.trim() == 'ex'){
+      this.getStateMachine()?.changeState(DELAY);      
+    }
+  }
+  process.onExit = function (): void { console.log('process.onExit') }
+
+  const delay = new StateFunction(stateMachine);
+  delay.onEnter = function (): void {
+    console.log('delay.onEnter')
+    setTimeout(() => {
+      this.getStateMachine()?.changeState(DONE);     
+    }, 2000);
+  }
+  delay.handleInput = function (line: string): void {
+    console.log('delay.handleInput: ' + line); 
+    if(line.trim() == 'dn'){
+      this.getStateMachine()?.changeState(DONE);      
+    }
+  }
+  delay.onExit = function (): void { console.log('delay.onExit') }
+
+  const done = new StateFunction(stateMachine);
+  done.onEnter = function (): void { console.log('done.onEnter'); }
+
+  stateMachine.addFunction(INIT, init);
+  stateMachine.addFunction(PROCESS, process);
+  stateMachine.addFunction(DELAY, delay);
+  stateMachine.addFunction(DONE, done);
+
+  const handler: lineHandler = (line: string): void => {
+    console.log('handler: ' + line);    
+    stateMachine.handleInput(line);
+  }
+
+  const kbListener = new KeyBoardListener();
+  const handlerId = kbListener.addLineHandler(handler);
+
+  stateMachine.start(INIT);
+}
+sf1();
