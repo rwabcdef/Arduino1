@@ -258,4 +258,32 @@ uint8_t Led::flashOffState(){
   }
 }
 
+void LedUtils::setLedEvent(Led* led, LedEvent::eventTypes type, LedFlashParams* flashParams)
+{
+  switch(type)
+  {
+    case LedEvent::On:
+      led->on();
+      break;
+    case LedEvent::Off:
+      led->off();
+      break;
+    case LedEvent::Flash:
+      if(flashParams != nullptr)
+      {
+        led->flash(flashParams->numFlashes, flashParams->onPeriods, flashParams->offPeriods);
+      }
+      break;
+    case LedEvent::FlashEndEnable:
+      led->setFlashEndEventEnabled(true);
+      break;
+    case LedEvent::FlashEndDisable:
+      led->setFlashEndEventEnabled(false);
+      break;
+    default:
+      // do nothing
+      break;
+  }
+}
+
 } // namespace HardMod::Std

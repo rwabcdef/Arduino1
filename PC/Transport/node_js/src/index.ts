@@ -40,33 +40,6 @@ const buttonSocket = serLink.acquireSocket("BUT01", 123, onButtonReceive);
 
 const cli = new App.Console.CLI();
 
-// const kbHandler = (line: string) => {
-//   const trimmedLine = line.trim();
-//   if (trimmedLine === "q") {
-//     console.log("Exiting...");
-//     cli.close();
-//     process.exit(0);
-//   }
-//   else if (trimmedLine === "lg1") {
-//     const frame = new Frame("LED01", Frame.TYPE_TRANSMISSION, 67, 2, "G1");
-//     //serLink.sendFrame(frame).then(() => {
-//     ledSocket?.sendData("G1", true).then(() => {
-//       console.log("Sent LG1 command");
-//     }).catch((err) => {
-//       console.error("Error sending LG1 command:", err);
-//     });
-//   }
-//   else if (trimmedLine === "lg0") {
-//     const frame = new Frame("LED01", Frame.TYPE_TRANSMISSION, 67, 2, "G0");
-//     //serLink.sendFrame(frame).then(() => {
-//     ledSocket?.sendData("G0", true).then(() => {
-//       console.log("Sent LG0 command");
-//     }).catch((err) => {
-//       console.error("Error sending LG0 command:", err);
-//     });
-//   }
-// }
-
 const kbHandler = (line: string) => {
   const trimmedLine = line.trim();
 
@@ -88,14 +61,28 @@ const kbHandler = (line: string) => {
 
 cli.addLineHandler(kbHandler);
 
+//-----------------------------------------------------------------------------------------
+// LED command examples:
+// lg1         - turn green LED on
+// lg0         - turn green LED off
+// lr1         - turn red LED on
+// lr0         - turn red LED off
+// ly1         - turn yellow LED on
+// ly0         - turn yellow LED off
+// lgf,5,4,8   - flash green LED 5 times, 4 on periods, 8 off periods
+// lrf,3,7,12  - flash red LED 3 times, 7 on periods, 12 off periods
+// lyf,2,5,5   - flash yellow LED 2 times, 5 on periods, 5 off periods
+// lys         - enable yellow LED flash end event
+// lyc         - cancel yellow LED flash end event
+//
 function sendLedCmd(input: string) {
   const trimmed = input.trim();
 
   // lg0, lg1, lr0, lr1 ...
-  let match = trimmed.match(/^l([a-zA-Z])([01])$/);
+  let match = trimmed.match(/^l([a-zA-Z])([01SsCc])$/);
   if (match) {
     const led = match[1].toUpperCase();
-    const state = match[2];
+    const state = match[2].toUpperCase();
 
     const payload = `${led}${state}`;
 

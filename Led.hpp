@@ -59,6 +59,7 @@ class LedEvent: public Event, public VariableIdChar {
     uint8_t onPeriods;
     uint8_t offPeriods;
 };
+//------------------------------------------------------------------------------------------------------
 
 class Led : public StateMachine, public FixedIdChar {
   
@@ -97,6 +98,13 @@ class Led : public StateMachine, public FixedIdChar {
     uint8_t flashOnState();
     uint8_t flashOffState();
     void common();
+}; // End class Led
+
+//------------------------------------------------------------------------------------------------------
+
+class LedUtils {
+  public:
+    static void setLedEvent(Led* led, LedEvent::eventTypes type, LedFlashParams* flashParams = nullptr);
 };
 
 } // namespace HardMod::Std

@@ -194,7 +194,7 @@ HardMod::Std::Button buttonA('A', GPIO_REG__PORTD, 7, false, true, 150);
 //-----------------------
 
 HardMod::Std::Led greenLed('G', GPIO_REG__PORTB, 5); // pin 13
-HardMod::Std::Led yellowLed('Y', GPIO_REG__PORTB, 4, true);// pin 12
+HardMod::Std::Led yellowLed('Y', GPIO_REG__PORTB, 4);// pin 12
 HardMod::Std::Led redLed('R', GPIO_REG__PORTB, 3);   // pin 11
 //-----------------------
 // Motor A
@@ -545,63 +545,28 @@ void loop() {
   // 
   if(ledSocket.getRxEvent(ledEvent))
   {
+    HardMod::Std::Led* led = nullptr;
     HardMod::Std::LedFlashParams ledFlashParams;
     HardMod::Std::LedEvent::eventTypes type = ledEvent.getType(&ledFlashParams);
     
+    
     if(ledEvent.getId() == 'G')
     {
-      if(type == HardMod::Std::LedEvent::eventTypes::On)
-      {
-        greenLed.on();
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::Off)
-      {
-        greenLed.off();
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::Flash)
-      {
-        greenLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
-        //greenLed.flash(3, 1, 4);
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::FlashEndEnable)
-      {
-        greenLed.setFlashEndEventEnabled(true);
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::FlashEndDisable)
-      {
-        greenLed.setFlashEndEventEnabled(false);
-      }
+      led = &greenLed;
     }
     else if(ledEvent.getId() == 'Y')
     {
-      if(type == HardMod::Std::LedEvent::eventTypes::On)
-      {
-        yellowLed.on();
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::Off)
-      {
-        yellowLed.off();
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::Flash)
-      {
-        yellowLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
-      }
+      led = &yellowLed;
     }
     else if(ledEvent.getId() == 'R')
     {
-      if(type == HardMod::Std::LedEvent::eventTypes::On)
-      {
-        redLed.on();
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::Off)
-      {
-        redLed.off();
-      }
-      else if(type == HardMod::Std::LedEvent::eventTypes::Flash)
-      {
-        redLed.flash(ledFlashParams.numFlashes, ledFlashParams.onPeriods, ledFlashParams.offPeriods);
-      }
+      led = &redLed;
     }
+    if(led != nullptr)
+    {
+      HardMod::Std::LedUtils::setLedEvent(led, type, &ledFlashParams);
+    }
+    
   }
 
   // if(yellowLed.getFlashEnd())
