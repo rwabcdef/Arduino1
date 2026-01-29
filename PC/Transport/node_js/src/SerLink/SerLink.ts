@@ -499,3 +499,72 @@ export class SerLink extends DebugPrint implements ISerLink {
   }
 }
 
+export type RxDataHandler = (data: string) => void;
+
+export class Led{
+  protected id: string;
+  protected socket: Socket | null = null;
+  protected onRxData: RxDataHandler | null = null;
+
+  constructor(id: string, socket: Socket | null = null, rxHandler: RxDataHandler | null = null){
+    this.id = id;
+    this.socket = socket;
+    this.onRxData = rxHandler;
+  }
+
+  public async handleRxData(data: string):Promise<void> {
+    if(this.onRxData){
+      this.onRxData(data);
+    }
+  }
+  // Turn LED on
+  public async on():Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+    const payload = `${this.id}1`;
+    return await this.socket.sendData(payload, true);
+  }
+
+  // Turn LED off
+  public async off():Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+    const payload = `${this.id}0`;
+    return await this.socket.sendData(payload, true);
+  }
+
+  // Flash LED
+  public async flash(numFlashes: number, onPeriods: number, offPeriods: number):Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+    const pad2 = (n: number) => n.toString().padStart(2, "0");
+    //const payload = `${this.id}f,${times},${onPeriod},${offPeriod}`;
+    const payload =
+      `${this.id}F` +
+      pad2(numFlashes) +
+      pad2(onPeriods) +
+      pad2(offPeriods);
+    return await this.socket.sendData(payload, true);
+  }
+
+  // Enable flash end event
+  public async enableFlashEndEvent():Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+    const payload = `${this.id}S`;
+    return await this.socket.sendData(payload, true);
+  }
+
+  // Cancel flash end event
+  public async cancelFlashEndEvent():Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+    const payload = `${this.id}C`;
+    return await this.socket.sendData(payload, true);
+  }
+}
