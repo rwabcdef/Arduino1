@@ -29,13 +29,13 @@ bool MotorEvent::deSerialise(char* str)
 
   switch(this->action)
   {
-    case MOTOREVENT__SET_PERCENT:
+    case MOTOREVENT__PERCENT:
       this->type = SetPercent;
       this->value = SerLink::Utils::strToUint8(&str[2], 3);
       if(this->value > 100)
         this->value = 100;
       break;
-    case MOTOREVENT__SET_DIRECTION:
+    case MOTOREVENT__DIRECTION:
       this->type = SetDirection;
       if(str[2] == MOTOREVENT__DIRECTION_FORWARD)
       {
@@ -55,7 +55,7 @@ bool MotorEvent::deSerialise(char* str)
         return false;
       }
       break;
-    case MOTOREVENT__SET_FREQUENCY:
+    case MOTOREVENT__FREQUENCY:
       this->type = SetFrequency;
       switch(str[2])
       {

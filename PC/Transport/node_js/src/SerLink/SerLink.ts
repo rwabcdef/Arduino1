@@ -336,6 +336,11 @@ class Port extends DebugPrint {
 // });
 }  
 
+export type sendFrameResult = {
+  status: number;
+  ackData?: string;
+};
+
 export class Writer extends DebugPrint {
   private port: Port | null = null;
   private ackFrame: Frame | null = null;
@@ -358,7 +363,8 @@ export class Writer extends DebugPrint {
         this.dprint(`Waiting for ACK for roll code: ${txFrame.getRollCode()}`);
         // Simple wait loop for ACK - in real implementation, consider timeout and retries
         var count = 0;
-        while (this.ackFrame == null || this.ackFrame.getRollCode() != txFrame.getRollCode()) {
+        while ((this.ackFrame == null) || (this.ackFrame.getRollCode() != txFrame.getRollCode())
+         || (this.ackFrame.getProtocol() != txFrame.getProtocol())) {
           await delay(10); // wait for ACK
           count += 1;
           if (count > 100) { // timeout after 1 second
@@ -367,6 +373,9 @@ export class Writer extends DebugPrint {
           }
         }
         this.dprint(`Received ACK for roll code: ${txFrame.getRollCode()}`);
+
+        // Check if ackFrame contains returned data
+
         this.ackFrame = null; // reset for next frame
         return 0; // success
       }

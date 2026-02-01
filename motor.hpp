@@ -8,13 +8,9 @@
 #include "idChar.hpp"
 #include "HardMod_Event.hpp"
 
-#define MOTOREVENT__SET_PERCENT 'P'
-#define MOTOREVENT__SET_DIRECTION 'D'
-#define MOTOREVENT__SET_FREQUENCY 'F'
-
-// Used by a socket to request all motor parameters
-// (values are returned in the ack frame, by the instant handler)
-#define MOTOREVENT__GET_ALL 'G'
+#define MOTOREVENT__PERCENT 'P'
+#define MOTOREVENT__DIRECTION 'D'
+#define MOTOREVENT__FREQUENCY 'F'
 
 #define MOTOREVENT__DIRECTION_FORWARD 'F'
 #define MOTOREVENT__DIRECTION_REVERSE 'R'
@@ -26,6 +22,12 @@
 #define MOTOREVENT__FREQUENCY_5_KHZ '3'
 #define MOTOREVENT__FREQUENCY_10_KHZ '4'
 #define MOTOREVENT__FREQUENCY_20_KHZ '5'
+
+// Used by a socket to request all motor parameters
+// (values are returned in the ack frame, by the instant handler)
+// e.g.: BGP = "Get Percent for motor B"
+#define MOTOREVENT__GET 'G'
+#define MOTOREVENT__ALL_PARAMS 'A' // used with GET action, e.g.: BGA = "Get All parameters for motor B"
 
 namespace HardMod::Std
 {

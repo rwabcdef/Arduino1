@@ -1,0 +1,7 @@
+
+---------------------------------------------------------------------------
+In PC/Transport/node_js/src/SerLink/SerLink.ts
+
+Implement sendFrameResult as return type from Writer.sendFrameAsync()
+
+---------------------------------------------------------------------------

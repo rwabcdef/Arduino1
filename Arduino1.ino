@@ -414,7 +414,10 @@ void loop() {
 
   // MOTORT516005AP030
   // MOTORT523003ADR
-  // MOTORT529002AG  -  Read registers
+  // MOTORT529003AGP  -  Read percent value
+  // MOTORT529003AGF  -  Read frequency
+  // MOTORT529003AGD  -  Read direction
+  //
   if(motorSocket.getRxEvent(motorEvent))
   {
     // Unfinnished
@@ -656,11 +659,63 @@ bool motorSockInstantHandler(SerLink::Frame &rxFrame, uint16_t* dataLen, char* d
   {
     // motor A
     index++;
-    if(rxFrame.buffer[index] == MOTOREVENT__GET_ALL)
+    if(rxFrame.buffer[index] == MOTOREVENT__GET)
     {
+        index++;
         memset(data, 0, 10); // clear outgoing buffer
-        *dataLen = Registers::PWM0::Read(data);
-        return true;
+        if(rxFrame.buffer[index] == MOTOREVENT__PERCENT)
+        {
+          //*dataLen = Registers::PWM0::Read(data);
+          uint8_t percent = motorA.getPercent();
+          sprintf(data, "%03d", percent);
+          *dataLen = 3;
+          return true;
+        }
+        else if(rxFrame.buffer[index] == MOTOREVENT__DIRECTION)
+        {
+          //*dataLen = Registers::PWM0::Read(data);
+          HardMod::Std::Motor::directionStates direction = motorA.getDirection();
+          data[0] = (direction == HardMod::Std::Motor::directionStates::Forward) ? 'F' : 
+                    (direction == HardMod::Std::Motor::directionStates::Reverse) ? 'R' : 'D';
+          *dataLen = 1;
+          return true;
+        }
+        else if(rxFrame.buffer[index] == MOTOREVENT__FREQUENCY)
+        {
+          //*dataLen = Registers::PWM0::Read(data);
+          pwmFreqValues frequency = motorA.getFrequency();
+          switch(frequency)
+          {
+            case PWM_FREQ_1_KHZ:
+              data[0] = MOTOREVENT__FREQUENCY_1_KHZ;
+              data[1] = '\0';
+              break;
+            case PWM_FREQ_2_KHZ:
+              data[0] = MOTOREVENT__FREQUENCY_2_KHZ;
+              data[1] = '\0';
+              break;
+            case PWM_FREQ_5_KHZ:
+              data[0] = MOTOREVENT__FREQUENCY_5_KHZ;
+              data[1] = '\0';
+              break;
+            case PWM_FREQ_10_KHZ:
+              data[0] = MOTOREVENT__FREQUENCY_10_KHZ;
+              data[1] = '\0';
+              break;
+            case PWM_FREQ_20_KHZ:
+              data[0] = MOTOREVENT__FREQUENCY_20_KHZ;
+              data[1] = '\0';
+              break;
+            default:
+              data[0] = 'X';
+              data[1] = '\0';
+              break;
+          }
+          *dataLen = 1;
+          return true;
+        }
+        //*dataLen = Registers::PWM0::Read(data);
+        return false;
     }
     else if(rxFrame.buffer[index] == 'T') 
     {
