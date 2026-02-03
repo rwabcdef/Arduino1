@@ -412,8 +412,13 @@ void loop() {
     motorA.setPercent(potEvent.getPercent());
   }
 
-  // MOTORT516005AP030
-  // MOTORT523003ADR
+  // MOTORT516005AP030 - Set motor A percent to 30%
+  // MOTORT523003ADR - Set motor A direction to reverse
+  // MOTORT523003ADF - Set motor A direction to forward
+  // MOTORT523003ADD - Set motor A direction to disabled
+  // MOTORT523003AF0 - Set motor A frequency to 500 Hz
+  // MOTORT523003AF1 - Set motor A frequency to 1 kHz
+  // MOTORT523003AF2 - Set motor A frequency to 2 kHz
   // MOTORT529003AGP  -  Read percent value
   // MOTORT529003AGF  -  Read frequency
   // MOTORT529003AGD  -  Read direction

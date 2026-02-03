@@ -17,7 +17,7 @@ npm run quick-start
 npm install 
 */
 
-import { SerLink, App, Frame, Socket, RxDataHandler, Led } from "./SerLink/SerLink";
+import { SerLink, App, Frame, Socket, RxDataHandler, Led, Motor } from "./SerLink/SerLink";
 import * as readline from "readline";
 
 console.log('index start');
@@ -83,11 +83,20 @@ const greenLed = new Led(greenLedId, ledSocket);
 const yellowLed = new Led(yellowLedId, ledSocket, onYellowLedRx);
 const redLed = new Led(redLedId, ledSocket);
 
+//-----------------
+// Button socket and handler
 const onButtonReceive = (rxFrame: Frame) => {
   console.log(`Socket BUT01 Received frame: ${rxFrame.toString().trim()}`);
 }
 
 const buttonSocket = serLink.acquireSocket("BUT01", 123, onButtonReceive);
+//-----------------
+
+const motorSocket = serLink.acquireSocket("MOTOR", 456);
+const motorA = new Motor("A", motorSocket);
+
+//--------------------------------
+// Setup console input handler
 
 const cli = new App.Console.CLI();
 
@@ -103,6 +112,9 @@ const kbHandler = (line: string) => {
 
   if (trimmedLine.startsWith("l")) {
     sendLedCmd(trimmedLine);
+    return;
+  } else if (trimmedLine.startsWith("m")) {
+    sendMotorCmd(trimmedLine);
     return;
   }
 
@@ -236,5 +248,122 @@ async function sendLedCmd(input: string): Promise<void> {
   console.error("Invalid LED command:", input);
 }
 
+const getMotor = (motorId: string): Motor | null => {
+  switch (motorId.toUpperCase()) {
+    case "A":
+      return motorA;
+    default:
+      return null;
+  }
+}
+
+// Motor command examples:
+// map35    - set motor A percent to 35%
+// map100   - set motor A percent to 100%
+// madf     - set motor A direction to forward
+// madr     - set motor A direction to reverse
+// madd     - set motor A direction to disabled
+// maf0     - set motor A frequency to 500 Hz
+// maf1     - set motor A frequency to 1 kHz
+// maf2     - set motor A frequency to 2 kHz
+async function sendMotorCmd(input: string): Promise<void> {
+  const trimmed = input.trim();
+
+  //
+  // map35, map100 ...
+  //
+  let match = trimmed.match(/^m([a-zA-Z])p(\d{1,3})$/);
+  if (match) {
+    const motorId = match[1].toUpperCase();
+    const percent = Number(match[2]);
+
+    const motor = getMotor(motorId);
+    if (!motor) {
+      console.error("Invalid motor ID:", motorId);
+      return;
+    }
+
+    const status = await motor.setPercent(percent);
+    if (status === 0) {
+      console.log(`Motor ${motorId} set to ${percent}%`);
+    } else {
+      console.error(`Motor ${motorId} percent error:`, status);
+    }
+    return;
+  }
+
+  //
+  // madf, madr, madd
+  //
+  match = trimmed.match(/^m([a-zA-Z])d([frd])$/i);
+  if (match) {
+    const motorId = match[1].toUpperCase();
+    const dirCode = match[2].toUpperCase();
+
+    const motor = getMotor(motorId);
+    if (!motor) {
+      console.error("Invalid motor ID:", motorId);
+      return;
+    }
+
+    let direction: string;
+    switch (dirCode) {
+      case "F":
+        direction = Motor.MOTOREVENT__DIRECTION_FORWARD;
+        break;
+      case "R":
+        direction = Motor.MOTOREVENT__DIRECTION_REVERSE;
+        break;
+      case "D":
+        direction = Motor.MOTOREVENT__DIRECTION_DISABLED;
+        break;
+      default:
+        console.error("Invalid direction code:", dirCode);
+        return;
+    }
+
+    const status = await motor.setDirection(direction);
+    if (status === 0) {
+      console.log(`Motor ${motorId} direction = ${direction}`);
+    } else {
+      console.error(`Motor ${motorId} direction error:`, status);
+    }
+    return;
+  }
+
+  //
+  // maf0, maf1, maf2, maf3, maf4, maf5
+  //
+  match = trimmed.match(/^m([a-zA-Z])f([0-5])$/);
+  if (match) {
+    const motorId = match[1].toUpperCase();
+    const freqCode = match[2];
+
+    const motor = getMotor(motorId);
+    if (!motor) {
+      console.error("Invalid motor ID:", motorId);
+      return;
+    }
+
+    // payload: A + F + code
+    const payload = `${motorId}${Motor.MOTOREVENT__FREQUENCY}${freqCode}`;
+
+    if (!motor["socket"]) {
+      console.error("Motor socket not initialized");
+      return;
+    }
+
+    const status = (await motor["socket"].sendData(payload, true)).status;
+
+    if (status === 0) {
+      console.log(`Motor ${motorId} frequency set to code ${freqCode}`);
+    } else {
+      console.error(`Motor ${motorId} frequency error:`, status);
+    }
+    return;
+  }
+
+  console.error("Invalid motor command:", input);
+}
 
 //-----------------------------------------------------------------------------------------

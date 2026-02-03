@@ -4,7 +4,7 @@ import * as readline from "readline";
 
 // async sendFrameAsync(txFrame: Frame):Promise<number>
 interface ISerLink {
-  sendFrame(txFrame: Frame):Promise<number>;
+  sendFrame(txFrame: Frame):Promise<SendFrameResult>;
 }
 
 // Utility function to introduce delay
@@ -224,7 +224,7 @@ export class Socket extends DebugPrint {
     this.onReceive = onReceive;
   }
 
-  public async sendData(data: string, ack: boolean):Promise<number> {
+  public async sendData(data: string, ack: boolean):Promise<SendFrameResult> {
     const frameType = ack ? Frame.TYPE_TRANSMISSION : Frame.TYPE_UNIDIRECTION;
     const dataLen = data.length;
     const txFrame = new Frame(this.protocol, frameType, this.rollCode, dataLen, data);
@@ -336,9 +336,13 @@ class Port extends DebugPrint {
 // });
 }  
 
-export type sendFrameResult = {
-  status: number;
-  ackData?: string;
+export class SendFrameResult {
+  public status: number;
+  public ackData?: string;
+  constructor(status: number, ackData: string | undefined = undefined){
+    this.status = status;
+    this.ackData = ackData;
+  }
 };
 
 export class Writer extends DebugPrint {
@@ -353,7 +357,9 @@ export class Writer extends DebugPrint {
     this.port = port;
   }
 
-  public async sendFrameAsync(txFrame: Frame):Promise<number> {
+  public async sendFrameAsync(txFrame: Frame):Promise<SendFrameResult> {
+    const result = new SendFrameResult(0);
+
     this.dprint(`Sending frame: ${txFrame.toString().trim()}`);
     if (this.port) {
       await this.port.writeAsync(txFrame.toString());
@@ -369,26 +375,29 @@ export class Writer extends DebugPrint {
           count += 1;
           if (count > 100) { // timeout after 1 second
             this.dprint(`Timeout waiting for ACK for roll code: ${txFrame.getRollCode()}`);
-            return 1; // timeout error code
+            return new SendFrameResult(1); // timeout error code
           }
         }
         this.dprint(`Received ACK for roll code: ${txFrame.getRollCode()}`);
 
         // Check if ackFrame contains returned data
+        if (this.ackFrame.getDataLen() > 0 && this.ackFrame.getData()) {  
+          result.ackData = this.ackFrame.getData();
+        }
 
         this.ackFrame = null; // reset for next frame
-        return 0; // success
+        return result; // success
       }
       else if (txFrame.getType() == Frame.TYPE_UNIDIRECTION) {
         // No ACK expected for UNIDIRECTION frames
-        return 0; // success
+        return result; // success
       }
       else {
         this.dprint(`Unknown frame type: ${txFrame.getType()}`);
-        return 2; // unknown frame type error code
+        return new SendFrameResult(2); // unknown frame type error code
       }
     }
-    return 3; // port not initialized error code
+    return new SendFrameResult(3); // port not initialized error code
   }
 
   public onReceiveAck(ackFrame: Frame): void {
@@ -488,11 +497,11 @@ export class SerLink extends DebugPrint implements ISerLink {
   }
 
   // Used by Sockets to send frames via Writer
-  public async sendFrame(txFrame: Frame):Promise<number> {
+  public async sendFrame(txFrame: Frame):Promise<SendFrameResult> {
     if (this.writer) {
       return await this.writer.sendFrameAsync(txFrame);
     }
-    return 1; // writer not initialized error code
+    return new SendFrameResult(5); // writer not initialized error code
   }
 
   // Acquire a socket for a specific protocol
@@ -532,7 +541,7 @@ export class Led{
       return -1; // error - socket not initialized
     }
     const payload = `${this.id}1`;
-    return await this.socket.sendData(payload, true);
+    return (await this.socket.sendData(payload, true)).status;
   }
 
   // Turn LED off
@@ -541,7 +550,7 @@ export class Led{
       return -1; // error - socket not initialized
     }
     const payload = `${this.id}0`;
-    return await this.socket.sendData(payload, true);
+    return (await this.socket.sendData(payload, true)).status;
   }
 
   // Flash LED
@@ -556,7 +565,7 @@ export class Led{
       pad2(numFlashes) +
       pad2(onPeriods) +
       pad2(offPeriods);
-    return await this.socket.sendData(payload, true);
+    return (await this.socket.sendData(payload, true)).status;
   }
 
   // Enable flash end event
@@ -565,7 +574,7 @@ export class Led{
       return -1; // error - socket not initialized
     }
     const payload = `${this.id}S`;
-    return await this.socket.sendData(payload, true);
+    return (await this.socket.sendData(payload, true)).status;
   }
 
   // Cancel flash end event
@@ -574,6 +583,54 @@ export class Led{
       return -1; // error - socket not initialized
     }
     const payload = `${this.id}C`;
-    return await this.socket.sendData(payload, true);
+    return (await this.socket.sendData(payload, true)).status;
   }
 }
+
+export class Motor {
+  static MOTOREVENT__PERCENT = 'P';
+  static MOTOREVENT__DIRECTION = 'D';
+  static MOTOREVENT__FREQUENCY = 'F';
+
+  static MOTOREVENT__DIRECTION_FORWARD = 'F';
+  static MOTOREVENT__DIRECTION_REVERSE = 'R';
+  static MOTOREVENT__DIRECTION_DISABLED = 'D';
+
+  static MOTOREVENT__FREQUENCY_500_HZ = '0';
+  static MOTOREVENT__FREQUENCY_1_KHZ = '1';
+  static MOTOREVENT__FREQUENCY_2_KHZ = '2';
+  static MOTOREVENT__FREQUENCY_5_KHZ = '3';
+  static MOTOREVENT__FREQUENCY_10_KHZ = '4';
+  static MOTOREVENT__FREQUENCY_20_KHZ = '5';
+
+  protected id: string;
+  protected socket: Socket | null = null;
+
+  constructor(id: string, socket: Socket | null = null){
+    this.id = id;
+    this.socket = socket;
+  }
+
+  public async setPercent(value: number):Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+
+    if(value < 0 || value > 100){
+      return -2; // error - value out of range
+    }
+
+    const absValue = Math.abs(value).toString().padStart(3, '0');
+    const payload = `${this.id}${Motor.MOTOREVENT__PERCENT}${absValue}`;
+    return (await this.socket.sendData(payload, true)).status;
+  }
+
+  public async setDirection(direction: string):Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+
+    const payload = `${this.id}${Motor.MOTOREVENT__DIRECTION}${direction[0].toUpperCase()}`;
+    return (await this.socket.sendData(payload, true)).status;
+  }
+} 
