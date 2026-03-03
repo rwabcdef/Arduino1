@@ -550,6 +550,8 @@ void loop() {
   // LED01T805002G1 LED01T805002G0
   // LED01T805008GF030104 - 3 flashes
   // LED01T805008GF000104 - continuous flashing
+  // LED01T805002YS - set yellow led flash end enable
+  // LED01T805002YS - clear yellow led flash end enable
   // 
   if(ledSocket.getRxEvent(ledEvent))
   {

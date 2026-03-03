@@ -55,13 +55,14 @@ const redLedId = 'R';
 const yellowLedId = 'Y';
 
 const serLink = new SerLink(true);
-serLink.init(portName, baudRate);
+//serLink.init(portName, baudRate);
 
 const onLedReceive = (rxFrame: Frame) => {
   console.log(`Socket LED01 Received frame: ${rxFrame.toString().trim()}`);
   const data = rxFrame.getData();
   if (data) {
     if (data.length > 0) {
+      // Resolve LED instance based on first character of data (e.g. G for green, R for red, Y for yellow)
       const ledId = data.charAt(0).toUpperCase();
       const led = getLed(ledId);
       if (led) {
@@ -126,20 +127,31 @@ cli.addLineHandler(kbHandler);
 //--------------------------------
 
 // delay main to allow SerLink to initialize
-setTimeout(() => {
-  main().catch(err => {
-    console.error("Error in main:", err);
-  });
-}, 2000);
+// setTimeout(() => {
+//   main().catch(err => {
+//     console.error("Error in main:", err);
+//   });
+// }, 2000);
 
 //--------------------------------
 
 const main = async () => {
   console.log("main start");
-  // Enable yellow LED flash end event by default
-  yellowLed.enableFlashEndEvent();
-}
 
+  // Initialize SerLink (which includes opening the serial port and setting up reader/writer)
+  await serLink.init(portName, baudRate);
+
+  setTimeout(() => {
+
+    // Enable yellow LED flash end event by default
+    yellowLed.enableFlashEndEvent();
+  }, 2000);
+};
+
+// Start main and catch any errors
+main().catch(err => {
+  console.error("Error in main:", err);
+});
 
 //-----------------------------------------------------------------------------------------
 const getLed = (ledId: string): Led | null => {
@@ -266,6 +278,9 @@ const getMotor = (motorId: string): Motor | null => {
 // maf0     - set motor A frequency to 500 Hz
 // maf1     - set motor A frequency to 1 kHz
 // maf2     - set motor A frequency to 2 kHz
+// magp     - get motor A percent
+// magd     - get motor A direction
+// magf     - get motor A frequency
 async function sendMotorCmd(input: string): Promise<void> {
   const trimmed = input.trim();
 
@@ -345,15 +360,7 @@ async function sendMotorCmd(input: string): Promise<void> {
       return;
     }
 
-    // payload: A + F + code
-    const payload = `${motorId}${Motor.MOTOREVENT__FREQUENCY}${freqCode}`;
-
-    if (!motor["socket"]) {
-      console.error("Motor socket not initialized");
-      return;
-    }
-
-    const status = (await motor["socket"].sendData(payload, true)).status;
+    const status = await motor.setFrequency(freqCode);
 
     if (status === 0) {
       console.log(`Motor ${motorId} frequency set to code ${freqCode}`);
@@ -362,6 +369,65 @@ async function sendMotorCmd(input: string): Promise<void> {
     }
     return;
   }
+
+  // get motor A percent/direction/frequency examples:
+  // magp     - get motor A percent
+  // magd     - get motor A direction
+  // magf     - get motor A frequency
+  // magp, magd, magf
+  match = trimmed.match(/^m([a-zA-Z])g([pdf])$/i);
+  if (match) {
+    console.log("match:", match);
+    const motorId = match[1].toUpperCase();
+    const param = match[2].toUpperCase();
+
+    const motor = getMotor(motorId);
+    if (!motor) {
+      console.error("Invalid motor ID:", motorId);
+      return;
+    }
+
+    switch (param) {
+      case "P":
+        const percent = await motor.getPercent();
+        if (percent !== null) {
+          console.log(`Motor ${motorId} percent = ${percent}%`);
+        } else {
+          console.error(`Motor ${motorId} get percent error`);
+        }
+        break;
+      case "D":
+        const direction = await motor.getDirection();
+        if (direction !== null) {
+          console.log(`Motor ${motorId} direction = ${direction}`);
+        } else {
+          console.error(`Motor ${motorId} get direction error`);
+        }
+        break;
+      case "F":
+        const frequency = await motor.getFrequency();
+        if (frequency !== null) {
+          console.log(`Motor ${motorId} frequency code = ${frequency}`);
+        } else {
+          console.error(`Motor ${motorId} get frequency error`);
+        }
+        break;
+      default:
+        console.error("Invalid parameter code:", param);
+    }
+
+    return;
+  }
+
+    // const payload = `${motorId}${Motor.MOTOREVENT__GET}${param}`;
+
+    // if (!motor["socket"]) {
+    //   console.error("Motor socket not initialized");
+    //   return;
+    // }
+
+    // const status = (await motor["socket"].sendData(payload, true)).status;
+    
 
   console.error("Invalid motor command:", input);
 }

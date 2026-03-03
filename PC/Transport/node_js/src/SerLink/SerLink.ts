@@ -260,12 +260,24 @@ class Port extends DebugPrint {
     super(debugOn, debugId);
   }
 
-  public init(portName: string, baudRate: number): void {
+  public async init(portName: string, baudRate: number): Promise<void> {
     this.port = new SerialPort({
       path: portName,
       baudRate: baudRate
     });
     this.parser = this.port.pipe(new ReadlineParser({ delimiter: "\n" }));
+
+    const openPromise = new Promise<void>((resolve, reject) => {
+      this.port?.on("open", () => {
+        this.dprint(`Serial port ${portName} opened at ${baudRate} baud.`);
+        resolve();
+      });
+      this.port?.on("error", (err) => {
+        console.error('Error opening serial port:', err.message);
+        reject(err);
+      });
+    });
+    await openPromise;
   }
 
   public setOnOpen(callback: () => void) {
@@ -470,17 +482,17 @@ export class SerLink extends DebugPrint implements ISerLink {
     super(debugOn, debugId);
   }
 
-  public init(portName: string, baudRate: number): void {
+  public async init(portName: string, baudRate: number): Promise<void> {
     this.port = new Port(this.debugOn);
-    this.port.init(portName, baudRate);
+    await this.port.init(portName, baudRate);
     this.writer = new Writer(this.debugOn);
     this.writer.init(this.port);
     this.reader = new Reader(this.debugOn);
     this.reader.init(this.port, this.writer, this)
 
-    this.port.setOnOpen(() => {
-      this.dprint(`Serial port ${portName} opened at ${baudRate} baud.`);
-    });
+    // this.port.setOnOpen(() => {
+    //   this.dprint(`Serial port ${portName} opened at ${baudRate} baud.`);
+    // });
   }
 
   // Used by Reader to notify SerLink of received frames
@@ -603,6 +615,8 @@ export class Motor {
   static MOTOREVENT__FREQUENCY_10_KHZ = '4';
   static MOTOREVENT__FREQUENCY_20_KHZ = '5';
 
+  static MOTOREVENT__GET = 'G';
+
   protected id: string;
   protected socket: Socket | null = null;
 
@@ -632,5 +646,51 @@ export class Motor {
 
     const payload = `${this.id}${Motor.MOTOREVENT__DIRECTION}${direction[0].toUpperCase()}`;
     return (await this.socket.sendData(payload, true)).status;
+  }
+
+  public async setFrequency(frequency: string):Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+
+    const payload = `${this.id}${Motor.MOTOREVENT__FREQUENCY}${frequency[0].toUpperCase()}`;
+    return (await this.socket.sendData(payload, true)).status;
+  }
+
+  public async getPercent():Promise<number> {
+    if(!this.socket){
+      return -1; // error - socket not initialized
+    }
+    
+    const payload = `${this.id}${Motor.MOTOREVENT__GET}${Motor.MOTOREVENT__PERCENT}`;
+    const result = await this.socket.sendData(payload, true);
+    if(result.status == 0 && result.ackData){
+      return parseInt(result.ackData);
+    }
+    return -2; // error - failed to get percent
+  }
+  
+  public async getDirection():Promise<string> {
+    if(!this.socket){
+      return ''; // error - socket not initialized
+    }
+    const payload = `${this.id}${Motor.MOTOREVENT__GET}${Motor.MOTOREVENT__DIRECTION}`;
+    const result = await this.socket.sendData(payload, true);
+    if(result.status == 0 && result.ackData){
+      return result.ackData;
+    }
+    return ''; // error - failed to get direction
+  }
+
+  public async getFrequency():Promise<string> {
+    if(!this.socket){
+      return ''; // error - socket not initialized
+    }
+    const payload = `${this.id}${Motor.MOTOREVENT__GET}${Motor.MOTOREVENT__FREQUENCY}`;
+    const result = await this.socket.sendData(payload, true);
+    if(result.status == 0 && result.ackData){
+      return result.ackData;
+    }
+    return ''; // error - failed to get frequency
   }
 } 
