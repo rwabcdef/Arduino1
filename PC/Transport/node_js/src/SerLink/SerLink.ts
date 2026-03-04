@@ -20,7 +20,7 @@ type lineHandlerId = {
 }
 
 export class StateFunction {
-  private stateMachine: StateMachine | null;
+  private stateMachine: StateMachine;
 
   constructor(stateMachine: StateMachine) {
     this.stateMachine = stateMachine;
@@ -30,7 +30,7 @@ export class StateFunction {
 
   public onEnter(): void {}
   public onExit(): void {}
-  public handleInput: lineHandler = (line: string): void => {}
+  public handleInput: lineHandler = (input: string): void => {}
 }
 
 export class StateMachine {
@@ -52,10 +52,10 @@ export class StateMachine {
     }
   }
 
-  public handleInput(line: string) {
+  public handleInput(input: string) {
     const func = this.functions.get(this.state);
     if(func){
-      func.handleInput(line);
+      func.handleInput(input);
     }
   }
 
