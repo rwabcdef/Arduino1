@@ -18,6 +18,7 @@ LedEvent::eventTypes LedEvent::getType(LedFlashParams* flashParams)
     flashParams->numFlashes = this->numFlashes;
     flashParams->onPeriods = this->onPeriods;
     flashParams->offPeriods = this->offPeriods;
+    flashParams->finalFlashOff = this->finalFlashOff;
   }
   return this->type;
 }
@@ -42,6 +43,14 @@ bool LedEvent::deSerialise(char* str)
       this->numFlashes = SerLink::Utils::strToUint8(&str[2], 2);
       this->onPeriods = SerLink::Utils::strToUint8(&str[4], 2);
       this->offPeriods = SerLink::Utils::strToUint8(&str[6], 2);
+      if(str[8] == '1')
+      {
+        this->finalFlashOff = true;
+      }
+      else
+      {
+        this->finalFlashOff = false;
+      }
       break;
     case LEDEVENT__FLASH_SET_END_EVENT:
       this->type = FlashEndEnable;
@@ -115,12 +124,13 @@ void Led::off()
   this->type = LedEvent::Off;
 }
 
-void Led::flash(uint8_t numFlashes, uint8_t onPeriods, uint8_t offPeriods)
+void Led::flash(uint8_t numFlashes, uint8_t onPeriods, uint8_t offPeriods, bool finalFlashOff)
 {
   this->type = LedEvent::Flash;
   this->numFlashes = numFlashes;
   this->onPeriods = onPeriods;
   this->offPeriods = offPeriods;
+  this->finalFlashOff = finalFlashOff;
   //swTimer_tickReset(&this->startTick);
 }
 
@@ -212,6 +222,28 @@ uint8_t Led::flashOnState(){
   if(this->periodCount >= this->onPeriods)
   {
     this->periodCount = 0;
+
+    if(this->finalFlashOff == true)
+    {
+      // The sequence of flashes will end with the LED on, so we need to check
+      // if we are at the end of the flash sequence before turning off the LED
+
+      uint8_t count = this->flashCount;
+      if(++count >= this->numFlashes && this->numFlashes != 0)
+      {
+
+        // Final flash has just ended - so end of flash sequence
+        gpio_setPinLow(this->port, this->pin);
+
+        if(this->flashEndEventEnabled)
+        {
+          this->flashEndFlag = true;
+        }
+
+        return STATE_OFF;
+      }
+    }
+
     gpio_setPinLow(this->port, this->pin);
     return STATE_FLASH_OFF;
   }
@@ -271,7 +303,7 @@ void LedUtils::setLedEvent(Led* led, LedEvent::eventTypes type, LedFlashParams* 
     case LedEvent::Flash:
       if(flashParams != nullptr)
       {
-        led->flash(flashParams->numFlashes, flashParams->onPeriods, flashParams->offPeriods);
+        led->flash(flashParams->numFlashes, flashParams->onPeriods, flashParams->offPeriods, flashParams->finalFlashOff);
       }
       break;
     case LedEvent::FlashEndEnable:

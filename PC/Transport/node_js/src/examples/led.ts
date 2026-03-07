@@ -107,7 +107,7 @@ waitState.onEnter = () => {
 };
 waitState.onExit = () => {
   console.log("Exiting WAIT state");
-  yellowLed.flash(3, 5, 5).catch(err => console.error("Error flashing yellow LED:", err));
+  yellowLed.flash(3, 5, 5, true).catch(err => console.error("Error flashing yellow LED:", err));
 };
 waitState.handleInput = function (input: string): void {
   if (input === "go") {
@@ -223,13 +223,16 @@ async function sendLedCmd(input: string): Promise<void> {
     return;
   }
 
-  // lgf,5,4,8  |  lrf,3,7,12 ...
-  match = trimmed.match(/^l([a-zA-Z])f,(\d+),(\d+),(\d+)$/);
+  // lgf,3,4,8,1  |  lrf,3,7,12,0 ...
+  // lyf,3,4,8,1 
+  match = trimmed.match(/^l([a-zA-Z])f,(\d+),(\d+),(\d+),([01])$/);
   if (match) {
     const ledId = match[1].toUpperCase();
     const numFlashes = Number(match[2]);
     const onPeriods = Number(match[3]);
     const offPeriods = Number(match[4]);
+    const finalFlashOff = match[5] === "1" ? true : false;
+
 
     const pad2 = (n: number) => n.toString().padStart(2, "0");
 
@@ -239,7 +242,7 @@ async function sendLedCmd(input: string): Promise<void> {
       return;
     }
 
-    led.flash(numFlashes, onPeriods, offPeriods)
+    led.flash(numFlashes, onPeriods, offPeriods, finalFlashOff)
       .then(() => console.log(`Flashing LED ${ledId}: ${numFlashes} times, ${onPeriods} on, ${offPeriods} off`))
       .catch(err => console.error(`Error flashing LED ${ledId}:`, err));
 

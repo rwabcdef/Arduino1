@@ -24,6 +24,7 @@ class LedFlashParams{
     uint8_t numFlashes;
     uint8_t onPeriods;
     uint8_t offPeriods;
+    bool finalFlashOff; // if true, the final flash will end with the LED off. If false, the final flash will end with the LED on.
 };
 
 class LedEvent: public Event, public VariableIdChar {
@@ -58,6 +59,7 @@ class LedEvent: public Event, public VariableIdChar {
     uint8_t numFlashes;
     uint8_t onPeriods;
     uint8_t offPeriods;
+    bool finalFlashOff;
 };
 //------------------------------------------------------------------------------------------------------
 
@@ -67,7 +69,7 @@ class Led : public StateMachine, public FixedIdChar {
     Led(char id, uint8_t port, uint8_t pin, bool flashEndEventEnabled = false);
     void on();
     void off();
-    void flash(uint8_t numFlashes, uint8_t onPeriods, uint8_t offPeriods);
+    void flash(uint8_t numFlashes, uint8_t onPeriods, uint8_t offPeriods, bool finalFlashOff);
     void run();
     void setFlashEndEventEnabled(bool enabled);
 
@@ -89,6 +91,7 @@ class Led : public StateMachine, public FixedIdChar {
     int8_t periodCount;
     uint8_t onPeriods;
     uint8_t offPeriods;
+    bool finalFlashOff;
     uint16_t startTick;
     bool flashEndFlag;
     bool flashEndEventEnabled;

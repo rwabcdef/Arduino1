@@ -566,7 +566,7 @@ export class Led{
   }
 
   // Flash LED
-  public async flash(numFlashes: number, onPeriods: number, offPeriods: number):Promise<number> {
+  public async flash(numFlashes: number, onPeriods: number, offPeriods: number, finalFlashOff: boolean):Promise<number> {
     if(!this.socket){
       return -1; // error - socket not initialized
     }
@@ -576,7 +576,8 @@ export class Led{
       `${this.id}F` +
       pad2(numFlashes) +
       pad2(onPeriods) +
-      pad2(offPeriods);
+      pad2(offPeriods)
+      + (finalFlashOff ? '1' : '0');
     return (await this.socket.sendData(payload, true)).status;
   }
 
