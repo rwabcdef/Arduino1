@@ -17,7 +17,8 @@ npm run quick-start
 npm install 
 */
 
-import { SerLink, App, Frame, Socket, RxDataHandler, Led, Motor } from "./SerLink/SerLink";
+import { SerLink, CLI, Frame, Socket, RxDataHandler } from "./SerLink/SerLink";
+import { Led, Motor } from "./SerLink/HardMod/Std";
 import * as readline from "readline";
 
 import { socketExample1 } from "./examples/led";

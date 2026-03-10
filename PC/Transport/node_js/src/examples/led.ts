@@ -1,6 +1,5 @@
-import { SerLink, App, Frame, Socket, RxDataHandler, Led, Motor,
-  StateFunction, StateMachine
- } from "../SerLink/SerLink";
+import { SerLink, CLI, Frame, Socket, RxDataHandler, StateFunction, StateMachine } from "../SerLink/SerLink";
+import { Led, Motor } from "../SerLink/HardMod/Std";
 import * as readline from "readline";
 
 const greenLedId = 'G';
@@ -73,7 +72,7 @@ const motorA = new Motor("A", motorSocket);
 //--------------------------------
 // Setup console input handler
 
-const cli = new App.Console.CLI();
+const cli = new CLI();
 
 const kbHandler = (line: string) => {
   const trimmedLine = line.trim();
