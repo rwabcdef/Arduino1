@@ -16,7 +16,6 @@
 #include "DebugUser.hpp"
 #include "HardMod_EventQueue.hpp"
 #include "HardMod_Event.hpp"
-#include "ButtonEvent.hpp"
 
 namespace SerLink
 {

@@ -1,6 +1,7 @@
 #include "Button.hpp"
 #include "swTimer.h"
 #include "hw_gpio.h"
+#include "SerLink_Utils.hpp"
 
 namespace HardMod::Std
 {
@@ -12,6 +13,90 @@ namespace HardMod::Std
 #define STABLE_INACTIVE_THRESHOLD 5
 
 #define RUN_PERIOD_mS 20
+
+ButtonEvent::ButtonEvent(): Event()
+{
+  this->pressDuration = 0;
+}
+
+void ButtonEvent::setPressDuration(uint8_t pressDuration)
+{
+  this->pressDuration = pressDuration;
+}
+
+uint8_t ButtonEvent::getPressDuration()
+{
+  return this->pressDuration;
+}
+
+uint8_t ButtonEvent::serialise(char* str)
+{
+  uint8_t index = 0;
+  
+  str[index++] = this->getId();
+  str[index++] = this->action;
+
+  if(this->action == BUTTONEVENT__RELEASED)
+  {
+    SerLink::Utils::uint16ToStr((uint16_t) this->pressDuration, &str[index], 3);
+    index += 3;
+  }
+
+  return index;
+}
+
+void ButtonEvent::clear()
+{
+  this->clr();         // base class clr()
+  this->pressDuration = 0;
+}
+
+void ButtonEvent::copy(Event* copyEvent)
+{
+  ButtonEvent* copy = (ButtonEvent*) copyEvent;
+  copy->setAck(this->ack);
+  copy->setId(this->getId());
+  copy->setAction(this->action);
+  copy->setPressDuration(this->pressDuration);
+}
+
+
+ButtonConfigEvent::ButtonConfigEvent()
+{
+  this->value = 0;
+}
+
+bool ButtonConfigEvent::deSerialise(char* str)
+{
+  uint8_t index = 0;
+
+  this->setId(str[index++]);
+  this->action = str[index++];
+
+  if(this->action == BUTTONCONFIGEVENT__LONGPRESS)
+  {
+    this->value = SerLink::Utils::strToUint8(str[index], 3);
+  }
+  else if(this->action == BUTTONCONFIGEVENT__RELEASE)
+  {
+    this->value = str[index] == '0' ? 0 : 1;
+  }
+  else
+  {
+    this->value = 0;
+  }
+  return true;
+}
+
+uint8_t ButtonConfigEvent::getLongPressThreshold()
+{
+  return this->value;
+}
+
+bool ButtonConfigEvent::getEnableRelease()
+{
+  return this->value == 0 ? false : true;
+}
 
 Button::Button(char id, uint8_t port, uint8_t pin, bool ,
   bool releaseActive, uint8_t longPressThreshold)
@@ -207,4 +292,4 @@ uint8_t Button::pressed()
 //------------------- --------------------------------
 
 
-} // end namespace EventModule::Std
+} // end namespace HardMod::Std
