@@ -1,6 +1,6 @@
 import { Socket, RxDataHandler } from "../../SerLink/SerLink";
 
-export class Led{
+export class Led {
   protected id: string;
   protected socket: Socket | null = null;
   protected onRxData: RxDataHandler | null = null;

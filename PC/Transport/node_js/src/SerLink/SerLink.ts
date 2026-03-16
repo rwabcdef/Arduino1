@@ -242,6 +242,12 @@ export class Socket extends DebugPrint {
       this.onReceive(rxFrame);
     }
   }
+
+  public setOnReceive(callback: (frame: Frame) => void) {
+    this.onReceive = callback;
+  }
+
+  public getProtocol(): string { return this.protocol; }
 }
 
 class Port extends DebugPrint {
