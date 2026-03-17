@@ -1,6 +1,12 @@
 import { SerLink, CLI, Frame, Socket, RxDataHandler, StateFunction, StateMachine } from "../../SerLink/SerLink";
 import { Led } from "./Std";
 
+class GreenStateFunction extends StateFunction {
+  public pressed: boolean = false;
+  public active: boolean = false;
+  public timeout: NodeJS.Timeout | null = null;
+};
+
 export class TrafficLight extends StateMachine {
 
   static greenLedId = 'G';
@@ -18,8 +24,11 @@ export class TrafficLight extends StateMachine {
     super();
   }
 
-  public begin(){
-    this.start(TrafficLight.GREEN);
+  public async begin(){
+    if(this.ledYellow){
+      await this.ledYellow.enableFlashEndEvent(); // Enable flash end event for yellow LED
+    }
+   this.start(TrafficLight.GREEN);
   }
 
   public init(ledRed: Led, ledYellow: Led, ledGreen: Led){
@@ -52,7 +61,7 @@ export class TrafficLightFactory {
     const onYellowLedRx = (data: string) => {
       console.log(`Yellow LED Received data: ${data.trim()}`);
     
-      if(data && data[1] === "E") {
+      if(data && data[0] === "E") {
         console.log("Yellow LED flash end event received");
         // pass event to state machine as input
         trafficLight.handleInput("done");
@@ -80,12 +89,22 @@ export class TrafficLightFactory {
     };
 
     socket.setOnReceive(onLedReceive);
-    trafficLight.init(ledRed, ledYellow, ledGreen);
-
-    const greenState = new StateFunction(trafficLight);
-    greenState.onEnter = () => {
+    
+    const greenState = new GreenStateFunction(trafficLight);
+    greenState.onEnter = function() {
       console.log("Entering Green State");
       ledGreen.on();
+      this.pressed = false;
+      this.active = false;
+      this.timeout = setTimeout(() => {
+        if(this.pressed){
+          console.log("Green state timeout - transitioning to Yellow");
+          this.getStateMachine().changeState(TrafficLight.YELLOW);
+        } else {
+          console.log("Green state timeout - no press detected, remaining in Green");
+        }
+        this.active = true;
+      }, 5000); // 5 second timeout for green state
     };
     greenState.onExit = () => {
       console.log("Exiting Green State");
@@ -93,6 +112,26 @@ export class TrafficLightFactory {
     };
     greenState.handleInput = function(input: string) {
       if(input === "press"){
+        this.pressed = true;
+        if(this.active){  
+          console.log("Green state pressed again - transitioning to Yellow");
+          this.getStateMachine().changeState(TrafficLight.YELLOW);
+        }
+      }
+    };
+
+    const yellowState = new StateFunction(trafficLight);
+    yellowState.onEnter = () => {
+      console.log("Entering Yellow State");
+      ledYellow.flash(3, 4, 4, true); // Flash yellow LED for 3 cycles with 4 on and 4 off periods, final flash ends with LED off
+    };
+    yellowState.onExit = () => {
+      console.log("Exiting Yellow State");
+      ledYellow.off();
+    };
+    yellowState.handleInput = function(input: string) {
+      if(input === "done"){
+        console.log("Yellow state received flash end event - transitioning to Red");
         this.getStateMachine().changeState(TrafficLight.RED);
       }
     };
@@ -113,6 +152,7 @@ export class TrafficLightFactory {
     };
 
     trafficLight.addFunction(TrafficLight.GREEN, greenState);
+    trafficLight.addFunction(TrafficLight.YELLOW, yellowState);
     trafficLight.addFunction(TrafficLight.RED, redState);
 
     trafficLight.init(ledRed, ledYellow, ledGreen);
