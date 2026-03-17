@@ -127,7 +127,6 @@ export class TrafficLightFactory {
     };
     yellowState.onExit = () => {
       console.log("Exiting Yellow State");
-      ledYellow.off();
     };
     yellowState.handleInput = function(input: string) {
       if(input === "done"){
