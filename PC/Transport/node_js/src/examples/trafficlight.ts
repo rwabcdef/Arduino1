@@ -1,6 +1,6 @@
 import { SerLink, CLI, Frame, Socket, RxDataHandler, StateFunction, StateMachine, delay } from "../SerLink/SerLink";
 import { Led, Motor } from "../SerLink/HardMod/Std";
-import { TrafficLight, TrafficLightFactory } from "../SerLink/HardMod/StateMachines";
+import { TrafficLight, TrafficLightFactory, ITrafficLightParams } from "../SerLink/HardMod/StateMachines";
 
 const serLink = new SerLink(true);
 
@@ -14,7 +14,16 @@ export const tlExample1 = async (portName: string, baudRate: number) => {
 
   const ledSocket = serLink.acquireSocket("LED01", 342);
 
-  const tlc = TrafficLightFactory.create(ledSocket as Socket);
+  const params: ITrafficLightParams = {
+    socket: ledSocket as Socket,
+    greenDuration_mS: 5000,
+    redDuration_mS: 3000,
+    numFlashes: 5,
+    flashOn_mS: 1000,
+    flashOff_mS: 1000
+  };
+
+  const tlc = TrafficLightFactory.create(params);
 
   //tlc.ledYellow.enableFlashEndEvent(); // Enable flash end event for yellow LED
 
