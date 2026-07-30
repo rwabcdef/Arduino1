@@ -49,10 +49,11 @@ console.log('index start');
 
 
 // Adjust this to match your device
-const portName = "/dev/ttyACM0"; // linux arduino uno r3
+//const portName = "/dev/ttyACM0"; // linux arduino uno r3
 //const portName = "COM3"; // Windows arduino uno r3
-//const portName = "/dev/ttyUSB0"; // linux usb-serial adapter (STM32 uart etc.)
-const baudRate = 19200;
+const portName = "/dev/ttyUSB0"; // linux usb-serial adapter (STM32 uart etc.)
+//const baudRate = 19200; // arduino uno r3
+const baudRate = 115200; // STM32 uart 
 
 //socketExample1(portName, baudRate).
 tlExample1(portName, baudRate).

@@ -43,7 +43,7 @@ def processLed(cmd, id, led):
 # python3 run1.py
 if __name__ == '__main__':
 
-  serialPort =  'COM3' # '/dev/ttyACM0'
+  serialPort =  '/dev/ttyACM0' # 'COM3' # '/dev/ttyACM0' #
 
   serLink = SerLink.SerLink(serialPort, 19200, debugOn=True)
   serLink.debug.threadNameResolver.addCurrentThread('MAIN ')
