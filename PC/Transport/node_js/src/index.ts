@@ -23,6 +23,7 @@ import * as readline from "readline";
 
 import { socketExample1 } from "./examples/led";
 import { tlExample1 } from "./examples/trafficlight";
+import { stm32SerLink } from "./examples/stm32";
 
 console.log('index start');
 
@@ -55,8 +56,13 @@ const portName = "/dev/ttyUSB0"; // linux usb-serial adapter (STM32 uart etc.)
 //const baudRate = 19200; // arduino uno r3
 const baudRate = 115200; // STM32 uart 
 
-//socketExample1(portName, baudRate).
-tlExample1(portName, baudRate).
-catch(err => {
-  console.error("Error in socketExample1:", err);
+// basic comms with STM32 device using SerLink
+stm32SerLink(portName, baudRate).catch(err => {
+  console.error("Error in stm32SerLink:", err);
 });
+
+//socketExample1(portName, baudRate).
+// tlExample1(portName, baudRate).
+// catch(err => {
+//   console.error("Error in socketExample1:", err);
+// });
