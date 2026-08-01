@@ -44,6 +44,11 @@ export const stm32SerLink = async (portName: string, baudRate: number) => {
       debugSocket?.sendData("zxc", true);
       return;
     }
+    else if (trimmedLine === "r") {
+      console.log("Sending debugSocket data...");
+      debugSocket?.sendData("R1", true);
+      return;
+    }
   
     // if (trimmedLine.startsWith("l")) {
     //   sendLedCmd(trimmedLine);
